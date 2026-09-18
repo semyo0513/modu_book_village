@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>책마을 : 우리 반 독서 빌리지</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- App Stylesheets -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/isometric.css" />
+</head>
+<body class="bg-[#f0f9f3] text-gray-800 antialiased selection:bg-emerald-200">
+
+  <!-- ========================================== -->
+  <!-- 1. Header & Navigation                     -->
+  <!-- ========================================== -->
+  <header class="sticky top-0 z-40 header-glass shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="App.switchTab('village')">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-green-400 flex items-center justify-center text-xl text-white shadow-md shadow-emerald-500/20">
+          🏡
+        </div>
+        <div>
+          <h1 class="font-black text-lg text-emerald-950 tracking-tight leading-none">책마을</h1>
+          <p class="text-[10px] font-bold text-emerald-600 tracking-wider uppercase mt-0.5">우리 반 독서 빌리지</p>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs -->
+      <nav class="hidden md:flex items-center gap-1 bg-white/70 p-1.5 rounded-2xl border border-gray-200/80 shadow-inner">
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="village" onclick="App.switchTab('village')">
+          🗺️ 마을 허브
+        </button>
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="feed" onclick="App.switchTab('feed')">
+          🎪 한 줄 피드
+        </button>
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="relay" onclick="App.switchTab('relay')">
+          📮 책 꼬리잇기
+        </button>
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="blind" onclick="App.switchTab('blind')">
+          🔮 비밀의 숲
+        </button>
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="interview" onclick="App.switchTab('interview')">
+          🎙️ 가상 인터뷰
+        </button>
+        <button class="nav-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-tab="myroom" onclick="App.switchTab('myroom')">
+          🏡 나의 서재
+        </button>
+        <button id="nav-teacher-menu" class="nav-tab-btn hidden px-3.5 py-1.5 rounded-xl text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 transition-all border border-purple-200" data-tab="admin" onclick="App.switchTab('admin')">
+          🏫 교사 관리
+        </button>
+      </nav>
+
+      <!-- User Session Actions -->
+      <div class="flex items-center gap-2">
+        <!-- Guest View -->
+        <div id="nav-guest" class="flex items-center gap-2">
+          <!-- Quick Demo Login Dropdown -->
+          <div class="relative group">
+            <button class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition-all">
+              ⚡ 빠른 체험
+            </button>
+            <div class="absolute right-0 mt-2 w-44 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 hidden group-hover:block z-50">
+              <div class="px-3 py-1 text-[10px] font-bold text-gray-400">학생으로 로그인</div>
+              <button onclick="Auth.quickLogin('s01')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 text-gray-700 font-semibold">1번 김하늘 (학생)</button>
+              <button onclick="Auth.quickLogin('s02')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 text-gray-700 font-semibold">2번 이바다 (학생)</button>
+              <button onclick="Auth.quickLogin('s03')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-emerald-50 text-gray-700 font-semibold">3번 박우주 (학생)</button>
+              <div class="border-t border-gray-100 my-1"></div>
+              <div class="px-3 py-1 text-[10px] font-bold text-purple-500">교사로 로그인</div>
+              <button onclick="Auth.quickLogin('teacher')" class="w-full text-left px-3 py-1.5 text-xs hover:bg-purple-50 text-purple-700 font-bold">담임선생님 (관리자)</button>
+            </div>
+          </div>
+
+          <button onclick="Modal.openLogin()" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold village-btn shadow-md">
+            로그인
+          </button>
+        </div>
+
+        <!-- Logged-in View -->
+        <div id="nav-user" class="hidden items-center gap-2.5">
+          <div class="text-right">
+            <div class="text-xs font-black text-gray-900 flex items-center justify-end gap-1.5">
+              <span id="nav-user-name">김하늘</span>
+              <span id="nav-user-role" class="badge-pill bg-emerald-100 text-emerald-700 text-[10px]">학생</span>
+            </div>
+          </div>
+          <button onclick="Auth.logout()" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="로그아웃">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================== -->
+  <!-- 2. Main Content Container                  -->
+  <!-- ========================================== -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- 2.1 Tab Panel: Village Hub (2.5D Isometric) -->
+    <section id="panel-village" class="tab-panel space-y-4">
+      <!-- Live Ticker -->
+      <div id="village-news-ticker" class="bg-white/90 backdrop-blur-sm border border-emerald-100 px-4 py-2.5 rounded-2xl shadow-sm flex items-center justify-between">
+        <span class="text-xs text-gray-500">✨ 책마을에 오신 것을 환영합니다!</span>
+      </div>
+
+      <!-- 2.5D Isometric Village Map Container -->
+      <div class="village-container shadow-2xl relative">
+        <div class="village-grid-overlay"></div>
+        
+        <!-- Animated Clouds -->
+        <div class="village-cloud cloud-1"></div>
+        <div class="village-cloud cloud-2"></div>
+        <div class="village-cloud cloud-3"></div>
+
+        <!-- Decorative Trees & Landmarks will be injected here -->
+        <div id="village-map-container" class="absolute inset-0"></div>
+      </div>
+
+      <!-- Quick Action Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        <button onclick="Modal.openBookSearch('feed')" class="village-card p-3.5 flex items-center gap-3 hover:border-emerald-300">
+          <span class="text-2xl">✍️</span>
+          <div class="text-left">
+            <div class="text-xs font-bold text-gray-900">한 줄 피드 쓰기</div>
+            <div class="text-[10px] text-gray-400">책 읽고 감상 공유</div>
+          </div>
+        </button>
+        <button onclick="Modal.openBookSearch('blind')" class="village-card p-3.5 flex items-center gap-3 hover:border-purple-300">
+          <span class="text-2xl">🔮</span>
+          <div class="text-left">
+            <div class="text-xs font-bold text-gray-900">비밀 도서 출제</div>
+            <div class="text-[10px] text-gray-400">표지 가리고 퀴즈</div>
+          </div>
+        </button>
+        <button onclick="Modal.openBookSearch('relay')" class="village-card p-3.5 flex items-center gap-3 hover:border-teal-300">
+          <span class="text-2xl">🔗</span>
+          <div class="text-left">
+            <div class="text-xs font-bold text-gray-900">책 꼬리 잇기</div>
+            <div class="text-[10px] text-gray-400">키워드로 연결</div>
+          </div>
+        </button>
+        <button onclick="Modal.openBookSearch('interview')" class="village-card p-3.5 flex items-center gap-3 hover:border-blue-300">
+          <span class="text-2xl">🎙️</span>
+          <div class="text-left">
+            <div class="text-xs font-bold text-gray-900">인물 가상 인터뷰</div>
+            <div class="text-[10px] text-gray-400">주인공 페르소나</div>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- 2.2 Tab Panel: Feed (Bookgram) -->
+    <section id="panel-feed" class="tab-panel hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-3xl border border-gray-200">
+        <div>
+          <h2 class="font-black text-xl text-gray-900 flex items-center gap-2">
+            <span>🎪</span> 우리 반 한 줄 피드 (Bookgram)
+          </h2>
+          <p class="text-xs text-gray-500 mt-1">친구들의 솔직한 감상평과 알라딘 독자 평점을 함께 비교해보세요.</p>
+        </div>
+        <button onclick="Modal.openBookSearch('feed')" class="px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn flex items-center gap-1.5 shadow-md">
+          ✍️ 새 피드 남기기
+        </button>
+      </div>
+
+      <!-- Tag Filters -->
+      <div id="feed-tag-filters" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
+
+      <!-- Feed Grid Container -->
+      <div id="feed-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- 2.3 Tab Panel: Relay Library -->
+    <section id="panel-relay" class="tab-panel hidden space-y-6">
+      <div id="relay-view-container"></div>
+    </section>
+
+    <!-- 2.4 Tab Panel: Blind Book -->
+    <section id="panel-blind" class="tab-panel hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-3xl shadow-lg">
+        <div>
+          <h2 class="font-black text-xl flex items-center gap-2">
+            <span>🔮</span> 비밀의 숲 (블라인드 북 익스체인지)
+          </h2>
+          <p class="text-xs text-purple-200 mt-1">표지와 제목을 숨긴 채 질문과 문장만 보고 친구들과 함께 책을 추리해보세요!</p>
+        </div>
+        <button onclick="Modal.openBookSearch('blind')" class="px-4 py-2.5 bg-white text-purple-900 rounded-xl text-xs font-bold village-btn shadow-md">
+          🔮 비밀 도서 등록하기
+        </button>
+      </div>
+
+      <div id="blind-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- 2.5 Tab Panel: Virtual Interview -->
+    <section id="panel-interview" class="tab-panel hidden space-y-6">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-blue-900 to-teal-900 text-white p-6 rounded-3xl shadow-lg">
+        <div>
+          <h2 class="font-black text-xl flex items-center gap-2">
+            <span>🎙️</span> 책 속 인물 가상 인터뷰 & 핫비평
+          </h2>
+          <p class="text-xs text-blue-200 mt-1">책 속 주인공이나 작가가 되어보세요! 친구들은 학급 기자가 되어 열띤 질문을 던집니다.</p>
+        </div>
+        <button onclick="Modal.openBookSearch('interview')" class="px-4 py-2.5 bg-white text-blue-900 rounded-xl text-xs font-bold village-btn shadow-md">
+          🎙️ 가상 인터뷰 개최하기
+        </button>
+      </div>
+
+      <div id="interview-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </section>
+
+    <!-- 2.6 Tab Panel: My Room -->
+    <section id="panel-myroom" class="tab-panel hidden space-y-6">
+      <div id="myroom-container"></div>
+    </section>
+
+    <!-- 2.7 Tab Panel: Teacher Admin -->
+    <section id="panel-admin" class="tab-panel hidden space-y-6">
+      <div id="admin-container"></div>
+    </section>
+
+  </main>
+
+  <!-- ========================================== -->
+  <!-- 3. Modals Container                        -->
+  <!-- ========================================== -->
+
+  <!-- 3.1 Login Modal -->
+  <div id="modal-login" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-sm p-6 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-black text-lg text-gray-900 flex items-center gap-2">
+          <span>🏡</span> 책마을 입장하기
+        </h3>
+        <button onclick="Modal.closeModal('modal-login')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <form onsubmit="Modal.handleLoginSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">아이디</label>
+          <input type="text" id="login-userid" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="예: s01, s02, teacher" required />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">비밀번호</label>
+          <input type="password" id="login-password" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="초기 비밀번호: 1234" required />
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn shadow-md">
+          로그인
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3.2 Aladin Book Search Modal -->
+  <div id="modal-book-search" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-lg p-6 space-y-4 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center">
+        <h3 class="font-black text-base text-gray-900 flex items-center gap-2">
+          <span>📚</span> 알라딘 도서 검색
+        </h3>
+        <button onclick="Modal.closeModal('modal-book-search')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <input type="hidden" id="search-target-type" value="feed" />
+
+      <div class="flex gap-2">
+        <input 
+          type="text" 
+          id="book-search-input" 
+          class="flex-1 px-3.5 py-2.5 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" 
+          placeholder="책 제목이나 저자 이름을 입력하세요..." 
+          onkeydown="if(event.key==='Enter') Modal.handleBookSearch()"
+        />
+        <button onclick="Modal.handleBookSearch()" class="px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn">
+          검색
+        </button>
+      </div>
+
+      <!-- Search Results List -->
+      <div id="book-search-results" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[250px]">
+        <div class="p-8 text-center text-gray-400 text-xs">
+          검색어를 입력하고 검색 버튼을 눌러주세요.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3.3 Write Record Modal (Dynamic Type) -->
+  <div id="modal-write-record" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-lg p-6 space-y-4 flex flex-col max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center">
+        <h3 class="font-black text-base text-gray-900 flex items-center gap-2">
+          <span>✍️</span> 독서 활동 기록 남기기
+        </h3>
+        <button onclick="Modal.closeModal('modal-write-record')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <!-- Selected Book Preview -->
+      <div class="flex gap-3 bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100">
+        <img id="write-book-cover-display" src="" class="w-14 h-20 object-cover rounded-lg shadow-sm" />
+        <div class="overflow-hidden flex flex-col justify-center">
+          <h4 id="write-book-title-display" class="font-black text-xs text-gray-900 line-clamp-1">도서 제목</h4>
+          <p id="write-book-author-display" class="text-[11px] text-gray-500 truncate mt-0.5">저자 정보</p>
+        </div>
+      </div>
+
+      <form id="form-write-record" onsubmit="Modal.handleRecordSubmit(event)" class="space-y-3">
+        <input type="hidden" id="write-book-isbn" />
+        <input type="hidden" id="write-relay-from-id" />
+
+        <!-- Activity Type Selector -->
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">활동 방식</label>
+          <select id="write-type-select" onchange="Modal.toggleWriteFieldsByType(this.value)" class="w-full px-3 py-2 border rounded-xl text-xs font-semibold focus:ring-2 focus:ring-emerald-400 outline-none">
+            <option value="feed">🎪 한 줄 피드 (Bookgram)</option>
+            <option value="blind">🔮 비밀의 숲 (블라인드 북)</option>
+            <option value="relay">📮 책 꼬리잇기 (릴레이)</option>
+            <option value="interview">🎙️ 가상 인물 인터뷰</option>
+          </select>
+        </div>
+
+        <!-- Title -->
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">제목</label>
+          <input type="text" id="write-title" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="기록의 한 줄 제목을 적어주세요." required />
+        </div>
+
+        <!-- Blind Book Specific Fields -->
+        <div id="write-blind-fields" class="hidden space-y-3 bg-purple-50 p-3.5 rounded-2xl border border-purple-200">
+          <div>
+            <label class="block text-xs font-bold text-purple-900 mb-1">🧐 호기심 생각 질문 (표지 대신 공개됨)</label>
+            <input type="text" id="write-blind-question" class="w-full px-3 py-2 border rounded-xl text-xs bg-white outline-none" placeholder="예: 여러분이 시간 여행을 할 수 있다면?" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-purple-900 mb-1">🔓 해금 목표 댓글 수</label>
+            <input type="number" id="write-blind-threshold" value="3" min="1" max="10" class="w-24 px-3 py-1.5 border rounded-xl text-xs bg-white outline-none" />
+          </div>
+        </div>
+
+        <!-- Interview Specific Fields -->
+        <div id="write-interview-fields" class="hidden space-y-3 bg-blue-50 p-3.5 rounded-2xl border border-blue-200">
+          <div>
+            <label class="block text-xs font-bold text-blue-900 mb-1">🎭 인터뷰할 책 속 인물/저자 이름</label>
+            <input type="text" id="write-interview-character" class="w-full px-3 py-2 border rounded-xl text-xs bg-white outline-none" placeholder="예: 어린 왕자, 독고 씨, 헤르미온느" />
+          </div>
+        </div>
+
+        <!-- Relay Specific Fields -->
+        <div id="write-relay-fields" class="hidden space-y-3 bg-teal-50 p-3.5 rounded-2xl border border-teal-200">
+          <div id="write-relay-info-box" class="hidden text-xs font-bold text-teal-800" id="write-relay-parent-title"></div>
+          <div>
+            <label class="block text-xs font-bold text-teal-900 mb-1">🔗 연결 키워드</label>
+            <input type="text" id="write-relay-keyword" class="w-full px-3 py-2 border rounded-xl text-xs bg-white outline-none" placeholder="예: 우주, 용기, 따뜻함" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-teal-900 mb-1">💡 앞 책과 연결한 이유</label>
+            <input type="text" id="write-relay-reason" class="w-full px-3 py-2 border rounded-xl text-xs bg-white outline-none" placeholder="앞의 책을 읽고 이 책을 떠올린 이유를 적어주세요." />
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">감상 및 생각 내용</label>
+          <textarea id="write-content" rows="3" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="친구들에게 전하고 싶은 이야기나 감상을 적어주세요." required></textarea>
+        </div>
+
+        <!-- Quote -->
+        <div>
+          <label class="block text-xs font-bold text-gray-600 mb-1">인상 깊은 문장 (선택)</label>
+          <input type="text" id="write-quote" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="책에서 가장 마음에 남은 한 줄" />
+        </div>
+
+        <!-- Rating & Emotion -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-600 mb-1">내 별점</label>
+            <select id="write-rating" class="w-full px-3 py-2 border rounded-xl text-xs outline-none">
+              <option value="5">⭐⭐⭐⭐⭐ 5점 (최고예요!)</option>
+              <option value="4">⭐⭐⭐⭐ 4점 (재미있어요)</option>
+              <option value="3">⭐⭐⭐ 3점 (보통이에요)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-600 mb-1">감정 태그</label>
+            <select id="write-emotion" class="w-full px-3 py-2 border rounded-xl text-xs outline-none">
+              <option value="🌟 깊은감동">🌟 깊은감동</option>
+              <option value="💡 깨달음">💡 깨달음</option>
+              <option value="😂 유쾌함">😂 유쾌함</option>
+              <option value="😢 뭉클함">😢 뭉클함</option>
+              <option value="🔥 열정/용기">🔥 열정/용기</option>
+              <option value="🤔 깊은생각">🤔 깊은생각</option>
+              <option value="🌿 마음의휴식">🌿 마음의휴식</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn shadow-md">
+          등록하고 나무 키우기 🍃
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3.4 Comments & Thread Modal -->
+  <div id="modal-comments" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-lg p-6 space-y-4 flex flex-col max-h-[85vh]">
+      <div class="flex justify-between items-center">
+        <h3 id="comments-modal-title" class="font-black text-sm text-gray-900">
+          💬 소통 및 토론 스레드
+        </h3>
+        <button onclick="Modal.closeModal('modal-comments')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <!-- Comments List -->
+      <div id="comments-list-container" class="flex-1 overflow-y-auto space-y-2.5 min-h-[220px] pr-1"></div>
+
+      <!-- Comment Form -->
+      <form onsubmit="Modal.handleCommentSubmit(event)" class="space-y-2 pt-2 border-t border-gray-100">
+        <!-- Role Selector (for Interview Mode) -->
+        <div id="comments-role-selector" class="hidden flex items-center gap-4 text-xs font-bold text-gray-700 bg-gray-50 p-2 rounded-xl">
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="commentRole" value="journalist" checked />
+            <span>📰 학급 기자 입장 (질문하기)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="commentRole" value="persona" />
+            <span id="comments-role-persona-name">🎭 인물 입장 (답변하기)</span>
+          </label>
+        </div>
+
+        <div class="flex gap-2">
+          <input type="text" id="comment-input-text" class="flex-1 px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" placeholder="따뜻한 댓글과 생각을 남겨보세요..." required />
+          <button type="submit" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn">
+            남기기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3.5 Tree Detail Modal -->
+  <div id="modal-tree-detail" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-sm p-6 text-center space-y-4">
+      <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-4xl shadow-inner">
+        🌳
+      </div>
+      <div>
+        <h3 class="font-black text-lg text-emerald-950">햇살 1반 독서 나무</h3>
+        <p class="text-xs text-gray-500 mt-1">우리 반 친구들이 완독한 책 1권마다 이파리가 1장씩 피어납니다!</p>
+      </div>
+
+      <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-xs space-y-2 text-emerald-900 font-bold">
+        <div>🌱 5권마다 맛있는 독서 열매(🍎) 결실</div>
+        <div>✨ 10권마다 다음 성장 단계로 진화!</div>
+      </div>
+
+      <button onclick="Modal.closeModal('modal-tree-detail')" class="w-full py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <!-- 3.6 Batch Register Students Modal -->
+  <div id="modal-batch-register" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-md p-6 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-black text-sm text-gray-900 flex items-center gap-2">
+          <span>👥</span> 학생 명단 일괄 등록
+        </h3>
+        <button onclick="Modal.closeModal('modal-batch-register')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        한 줄에 한 명씩 학생 번호와 이름을 적어주세요. (초기 비밀번호: 1234 자동 발급)
+      </p>
+
+      <textarea id="batch-students-input" rows="6" class="w-full px-3 py-2 border rounded-xl text-xs font-mono focus:ring-2 focus:ring-purple-400 outline-none" placeholder="1 김하늘&#10;2 이바다&#10;3 박우주"></textarea>
+
+      <button onclick="Admin.handleBatchSubmit()" class="w-full py-2.5 bg-purple-700 text-white rounded-xl text-xs font-bold village-btn">
+        학생 명단 일괄 등록하기
+      </button>
+    </div>
+  </div>
+
+  <!-- 3.7 System Settings Modal -->
+  <div id="modal-system-settings" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-md p-6 space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-black text-sm text-gray-900 flex items-center gap-2">
+          <span>⚙️</span> 시스템 & 백엔드 연동 설정
+        </h3>
+        <button onclick="Modal.closeModal('modal-system-settings')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">Google Apps Script 웹 앱 URL</label>
+        <input type="text" id="setting-gas-url" class="w-full px-3 py-2 border rounded-xl text-xs font-mono outline-none focus:ring-2 focus:ring-purple-400" placeholder="https://script.google.com/macros/s/.../exec" />
+        <p class="text-[11px] text-gray-400 mt-1">비워두시면 Mock(체험) 모드로 동작합니다.</p>
+      </div>
+
+      <button onclick="Admin.saveSettings()" class="w-full py-2.5 bg-purple-700 text-white rounded-xl text-xs font-bold village-btn">
+        설정 저장
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. App Script Inclusions                   -->
+  <!-- ========================================== -->
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/village.js"></script>
+  <script src="js/feed.js"></script>
+  <script src="js/relay.js"></script>
+  <script src="js/blind.js"></script>
+  <script src="js/interview.js"></script>
+  <script src="js/myroom.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
