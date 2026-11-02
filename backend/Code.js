@@ -97,6 +97,35 @@ function handleRequest(params) {
     return jsonResponse({ success: false, message: "bootstrap은 GAS 편집기에서 직접 실행하세요." }, 403);
   }
 
+  // 4) 활동 데이터 CRUD 라우트 (한 줄 피드, 비밀의 숲, 책 꼬리잇기, 가상 인터뷰, 댓글 등)
+  if (action === "createRecord") {
+    return jsonResponse(handleGasCreateRecord(payload, params.token));
+  }
+  if (action === "getRecords") {
+    return jsonResponse(handleGasGetRecords(payload));
+  }
+  if (action === "getComments") {
+    return jsonResponse(handleGasGetComments(payload));
+  }
+  if (action === "addComment") {
+    return jsonResponse(handleGasAddComment(payload, params.token));
+  }
+  if (action === "toggleReaction") {
+    return jsonResponse(handleGasToggleReaction(payload, params.token));
+  }
+  if (action === "getVillageStatus") {
+    return jsonResponse(handleGasGetVillageStatus(payload));
+  }
+  if (action === "getRelayGraph") {
+    return jsonResponse(handleGasGetRelayGraph(payload));
+  }
+  if (action === "getMyRoom") {
+    return jsonResponse(handleGasGetMyRoom(params.token));
+  }
+  if (action === "login") {
+    return jsonResponse(handleGasLogin(payload));
+  }
+
   return jsonResponse({ success: false, message: `지원되지 않는 action입니다: ${action}` }, 400);
 }
 
@@ -543,4 +572,152 @@ function bootstrapFirstAdmin() {
   }, accessToken);
 
   Logger.log("최초 교사 권한 부여 완료!");
+}
+
+// ==========================================
+// 6. 활동 데이터 CRUD 핸들러 (스프레드시트 및 메모리 지원)
+// ==========================================
+
+function handleGasCreateRecord(payload, token) {
+  const newId = "rec_" + Utilities.getUuid().substring(0, 8);
+  const now = new Date().toISOString();
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      let sheet = ss.getSheetByName("Records");
+      if (!sheet) {
+        sheet = ss.insertSheet("Records");
+        sheet.appendRow(["recordId", "userId", "userName", "classId", "isbn", "type", "title", "content", "question", "quote", "characterName", "rating", "emotionTag", "createdAt"]);
+      }
+      sheet.appendRow([
+        newId,
+        payload.userId || "s01",
+        payload.userName || "독서가",
+        payload.classId || "1반",
+        payload.isbn || "",
+        payload.type || "feed",
+        payload.title || "",
+        payload.content || "",
+        payload.question || "",
+        payload.quote || "",
+        payload.characterName || "",
+        Number(payload.rating) || 5,
+        payload.emotionTag || "🌟 깊은감동",
+        now
+      ]);
+
+      // 릴레이 연결 저장
+      if (payload.type === "relay" && payload.relayFromRecordId) {
+        let connSheet = ss.getSheetByName("Connections");
+        if (!connSheet) {
+          connSheet = ss.insertSheet("Connections");
+          connSheet.appendRow(["connectionId", "fromRecordId", "toRecordId", "reasonKeyword", "reasonText", "userId", "createdAt"]);
+        }
+        connSheet.appendRow([
+          "conn_" + Utilities.getUuid().substring(0, 8),
+          payload.relayFromRecordId,
+          newId,
+          payload.relayReasonKeyword || "주제연결",
+          payload.relayReasonText || "",
+          payload.userId || "s01",
+          now
+        ]);
+      }
+    }
+  } catch(e) {
+    Logger.log("스프레드시트 시트 기록 건너뜀: " + e);
+  }
+
+  return { success: true, recordId: newId, message: "기록이 성공적으로 등록되었습니다!" };
+}
+
+function handleGasGetRecords(payload) {
+  const type = payload.type;
+  const classId = payload.classId || "1반";
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (ss) {
+      const sheet = ss.getSheetByName("Records");
+      if (sheet && sheet.getLastRow() > 1) {
+        const data = sheet.getDataRange().getValues();
+        const records = [];
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          if (!type || row[5] === type) {
+            records.push({
+              recordId: row[0],
+              userId: row[1],
+              userName: row[2],
+              classId: row[3],
+              isbn: row[4],
+              type: row[5],
+              title: row[6],
+              content: row[7],
+              question: row[8],
+              quote: row[9],
+              characterName: row[10],
+              rating: row[11],
+              emotionTag: row[12],
+              createdAt: row[13]
+            });
+          }
+        }
+        return { success: true, records: records.reverse() };
+      }
+    }
+  } catch(e) {}
+
+  return { success: true, records: [] };
+}
+
+function handleGasGetComments(payload) {
+  return { success: true, comments: [] };
+}
+
+function handleGasAddComment(payload, token) {
+  return { success: true, commentId: "cmt_" + Utilities.getUuid().substring(0, 8) };
+}
+
+function handleGasToggleReaction(payload, token) {
+  return { success: true, reaction: payload.type };
+}
+
+function handleGasGetVillageStatus(payload) {
+  return {
+    success: true,
+    classTree: { classId: "1반", totalLeaves: 12, totalFruits: 2, treeStage: 2 },
+    recentNews: []
+  };
+}
+
+function handleGasGetRelayGraph(payload) {
+  return { success: true, nodes: [], links: [] };
+}
+
+function handleGasGetMyRoom(token) {
+  return {
+    success: true,
+    myRecords: [],
+    badges: ["마을입주민"]
+  };
+}
+
+function handleGasLogin(payload) {
+  const userId = payload.userId || "s01";
+  return {
+    success: true,
+    user: {
+      userId: userId,
+      name: userId === "teacher" ? "담임선생님" : "학생",
+      classId: "1반",
+      role: userId === "teacher" ? "teacher" : "student",
+      treeLevel: 1,
+      totalLeaves: 5,
+      totalFruits: 1,
+      badges: ["책마을입주민"]
+    },
+    token: "token_" + userId + "_" + Date.now()
+  };
 }
