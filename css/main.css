@@ -146,3 +146,26 @@ body {
 .flip-card-back {
   transform: rotateY(180deg);
 }
+
+/* Print optimization for student reading portfolio */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #portfolio-printable-area, #portfolio-printable-area * {
+    visibility: visible;
+  }
+  #portfolio-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none;
+    border: none;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

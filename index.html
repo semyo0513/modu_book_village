@@ -660,6 +660,201 @@
     </div>
   </div>
 
+  <!-- 3.8 Student Single Manual Add Modal -->
+  <div id="modal-student-single-add" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-md p-6 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b">
+        <h3 class="font-black text-sm text-gray-900 flex items-center gap-2">
+          <span>➕</span> 학생 개별 수동 등록 (Firebase & Firestore)
+        </h3>
+        <button onclick="Modal.closeModal('modal-student-single-add')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <form onsubmit="Admin.handleSingleStudentSubmit(event)" class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">출석 번호 <span class="text-rose-500">*</span></label>
+            <input type="number" id="single-st-number" min="1" max="99" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-purple-400 outline-none" placeholder="예: 1" required oninput="Admin.updateAutoIdPreview()" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">학급</label>
+            <input type="text" id="single-st-class" value="1반" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-purple-400 outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">학생 이름 <span class="text-rose-500">*</span></label>
+            <input type="text" id="single-st-name" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-purple-400 outline-none" placeholder="예: 홍길동" required />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">마을 닉네임</label>
+            <input type="text" id="single-st-nickname" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-purple-400 outline-none" placeholder="미입력 시 이름 사용" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">로그인 아이디 <span class="text-rose-500">*</span></label>
+          <input type="text" id="single-st-userid" class="w-full px-3 py-2 border rounded-xl text-xs font-mono focus:ring-2 focus:ring-purple-400 outline-none" placeholder="예: s01" required />
+          <p class="text-[10px] text-gray-400 mt-0.5">Firebase 이메일로 자동 변환됩니다. (예: s01@modu-book-village...)</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-gray-700 mb-1">초기 비밀번호 (6자리 이상) <span class="text-rose-500">*</span></label>
+          <input type="text" id="single-st-password" value="123456" minlength="6" class="w-full px-3 py-2 border rounded-xl text-xs font-mono focus:ring-2 focus:ring-purple-400 outline-none" required />
+          <p class="text-[10px] text-purple-600 mt-0.5 font-medium">※ Firebase 보안 규격상 최소 6자리(기본: 123456)로 설정됩니다.</p>
+        </div>
+
+        <button type="submit" id="btn-submit-single-student" class="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold village-btn shadow mt-2">
+          🚀 학생 계정 생성 및 파이어베이스 등록
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3.9 Teacher Feedback & Stamp Modal -->
+  <div id="modal-teacher-feedback" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-lg p-6 space-y-4">
+      <div class="flex justify-between items-center pb-2 border-b">
+        <h3 class="font-black text-sm text-gray-900 flex items-center gap-2">
+          <span>🏅</span> 선생님 칭찬 도장 & 독서 피드백
+        </h3>
+        <button onclick="Modal.closeModal('modal-teacher-feedback')" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+
+      <input type="hidden" id="feedback-record-id" />
+
+      <!-- 대상 기록 요약 -->
+      <div class="p-3 bg-amber-50 rounded-xl border border-amber-200">
+        <h4 id="feedback-target-title" class="text-xs font-bold text-amber-900 truncate">도서 제목</h4>
+        <p id="feedback-target-author" class="text-[11px] text-amber-700 mt-0.5">작성자: 학생 이름</p>
+      </div>
+
+      <!-- 칭찬 도장 선택기 (6종) -->
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1.5">선생님 칭찬 스탬프 선택</label>
+        <div class="grid grid-cols-3 gap-2" id="feedback-stamp-selector">
+          <button type="button" onclick="Admin.selectFeedbackStamp('🌟 참 잘했어요')" class="stamp-btn p-2 rounded-xl border-2 border-amber-400 bg-amber-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">🌟</span> 참 잘했어요
+          </button>
+          <button type="button" onclick="Admin.selectFeedbackStamp('💡 깊은 생각')" class="stamp-btn p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">💡</span> 깊은 생각
+          </button>
+          <button type="button" onclick="Admin.selectFeedbackStamp('💖 따뜻한 감동')" class="stamp-btn p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">💖</span> 따뜻한 감동
+          </button>
+          <button type="button" onclick="Admin.selectFeedbackStamp('🚀 상상력 최고')" class="stamp-btn p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">🚀</span> 상상력 최고
+          </button>
+          <button type="button" onclick="Admin.selectFeedbackStamp('🌿 마음 쉼표')" class="stamp-btn p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">🌿</span> 마음 쉼표
+          </button>
+          <button type="button" onclick="Admin.selectFeedbackStamp('👑 이주의 독서왕')" class="stamp-btn p-2 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs font-bold flex items-center gap-1.5">
+            <span class="text-lg">👑</span> 이주의 독서왕
+          </button>
+        </div>
+      </div>
+
+      <!-- 교사 피드백 코멘트 -->
+      <div>
+        <label class="block text-xs font-bold text-gray-700 mb-1">선생님의 따뜻한 피드백 한마디</label>
+        <textarea id="feedback-comment-input" rows="3" class="w-full p-3 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-amber-400 leading-relaxed" placeholder="학생에게 전하고 싶은 칭찬과 격려의 말을 남겨주세요... (학생의 글에 빛나는 도장과 함께 표시됩니다)"></textarea>
+      </div>
+
+      <div class="flex gap-2">
+        <button onclick="Admin.submitTeacherFeedback()" class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold village-btn shadow">
+          ✨ 칭찬 도장 찍고 피드백 전달하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3.10 Student Portfolio & Assessment Modal -->
+  <div id="modal-student-portfolio" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+    <div class="village-card bg-white w-full max-w-3xl p-6 space-y-4 max-h-[92vh] overflow-y-auto" id="portfolio-printable-area">
+      <div class="flex justify-between items-center pb-3 border-b">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">📜</span>
+          <div>
+            <h3 class="font-black text-base text-gray-900" id="portfolio-student-name">학생 독서 포트폴리오</h3>
+            <p class="text-[11px] text-gray-500" id="portfolio-student-meta">1학년 1반 | 독서 빌리지 활동 기록표</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 no-print">
+          <button onclick="window.print()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold flex items-center gap-1">
+            🖨️ 인쇄 / PDF 저장
+          </button>
+          <button onclick="Modal.closeModal('modal-student-portfolio')" class="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+        </div>
+      </div>
+
+      <!-- 요약 통계 카드 -->
+      <div class="grid grid-cols-4 gap-3 text-center">
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+          <p class="text-[10px] text-emerald-600 font-bold">완독 권수</p>
+          <p class="text-lg font-black text-emerald-800 mt-0.5" id="portfolio-stat-leaves">0권</p>
+        </div>
+        <div class="p-3 bg-amber-50 rounded-xl border border-amber-100">
+          <p class="text-[10px] text-amber-600 font-bold">황금 열매</p>
+          <p class="text-lg font-black text-amber-800 mt-0.5" id="portfolio-stat-fruits">0개</p>
+        </div>
+        <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
+          <p class="text-[10px] text-purple-600 font-bold">작성 활동 수</p>
+          <p class="text-lg font-black text-purple-800 mt-0.5" id="portfolio-stat-records">0개</p>
+        </div>
+        <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+          <p class="text-[10px] text-blue-600 font-bold">칭찬 도장</p>
+          <p class="text-lg font-black text-blue-800 mt-0.5" id="portfolio-stat-stamps">0개</p>
+        </div>
+      </div>
+
+      <!-- 학생이 남긴 독서 기록 목록 -->
+      <div>
+        <h4 class="text-xs font-bold text-gray-800 mb-2 flex items-center justify-between">
+          <span>📚 독서 활동 발자국</span>
+          <span class="text-[10px] text-gray-400 font-normal">피드 / 블라인드북 / 릴레이 / 인터뷰</span>
+        </h4>
+        <div id="portfolio-records-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-xl p-2 bg-gray-50/50">
+          <!-- JS 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 생활기록부용 교사 종합 독서 평가 & 지도 의견 -->
+      <div class="p-4 bg-purple-50/60 rounded-2xl border border-purple-100 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+            <span>✍️</span> 생활기록부 참고용 교사 종합 독서 평가
+          </h4>
+          <span class="text-[10px] text-purple-600">추천 템플릿 클릭 시 문장 자동 입력</span>
+        </div>
+
+        <!-- 템플릿 원클릭 버튼들 -->
+        <div class="flex flex-wrap gap-1.5 no-print">
+          <button type="button" onclick="Admin.insertEvaluationTemplate('dadaok')" class="px-2 py-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[10px] font-semibold">
+            + 📚 다독/성실형
+          </button>
+          <button type="button" onclick="Admin.insertEvaluationTemplate('empathy')" class="px-2 py-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[10px] font-semibold">
+            + 💖 공감/감성형
+          </button>
+          <button type="button" onclick="Admin.insertEvaluationTemplate('critical')" class="px-2 py-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[10px] font-semibold">
+            + 💡 비판/탐구형
+          </button>
+          <button type="button" onclick="Admin.insertEvaluationTemplate('creative')" class="px-2 py-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-[10px] font-semibold">
+            + 🚀 상상/창의형
+          </button>
+        </div>
+
+        <textarea id="portfolio-evaluation-text" rows="3" class="w-full p-3 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-purple-400 outline-none leading-relaxed" placeholder="학생의 독서 습관, 성향 및 활동에 대한 교사의 종합 평가를 입력하세요..."></textarea>
+
+        <div class="flex justify-end gap-2 no-print">
+          <button onclick="Admin.saveCurrentEvaluation()" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold village-btn shadow">
+            💾 평가 의견 저장하기 (Firestore)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ========================================== -->
   <!-- 4. App Script Inclusions                   -->
   <!-- ========================================== -->

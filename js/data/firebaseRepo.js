@@ -311,6 +311,62 @@
       } catch(e) {
         return null;
       }
+    },
+
+    // 8. 교사 칭찬 스탬프 및 피드백 저장
+    async addTeacherFeedback(recordId, feedback) {
+      await this.init();
+      if (!this.isInitialized || !db || !fsModules) return null;
+
+      const { doc, updateDoc, serverTimestamp } = fsModules;
+      try {
+        const recRef = doc(db, "records", recordId);
+        await updateDoc(recRef, {
+          teacherFeedback: {
+            ...feedback,
+            createdAt: serverTimestamp()
+          }
+        });
+        return { success: true };
+      } catch(err) {
+        console.warn("Firestore 교사 피드백 저장 오류:", err.message);
+        return null;
+      }
+    },
+
+    // 9. 학생 독서 평가 및 생기부 종합 의견 저장
+    async saveStudentEvaluation(userId, evaluation) {
+      await this.init();
+      if (!this.isInitialized || !db || !fsModules) return null;
+
+      const { doc, setDoc, serverTimestamp } = fsModules;
+      try {
+        const userRef = doc(db, "users", userId);
+        await setDoc(userRef, {
+          evaluation: {
+            ...evaluation,
+            updatedAt: serverTimestamp()
+          }
+        }, { merge: true });
+        return { success: true };
+      } catch(err) {
+        console.warn("Firestore 평가 저장 오류:", err.message);
+        return null;
+      }
+    },
+
+    // 10. 학생 계정 삭제
+    async deleteStudent(userId) {
+      await this.init();
+      if (!this.isInitialized || !db || !fsModules) return null;
+
+      const { doc, deleteDoc } = fsModules;
+      try {
+        await deleteDoc(doc(db, "users", userId));
+        return { success: true };
+      } catch(err) {
+        return null;
+      }
     }
   };
 

@@ -279,6 +279,140 @@
         body: JSON.stringify(payload)
       });
       return await res.json();
+    },
+
+    // 단일 학생 수동 직접 등록
+    async registerSingleStudent({ number, name, nickname, userId, password, classId = "1반" }) {
+      const CONFIG = global.CONFIG || {};
+      const fbConfig = CONFIG.FIREBASE || {};
+      const apiKey = fbConfig.apiKey;
+      const authDomain = fbConfig.authDomain || "modu-book-village.firebaseapp.com";
+      const projectId = fbConfig.projectId || "modu-book-village";
+      const isRealFirebase = apiKey && !apiKey.includes("MOCK");
+
+      const num = Number(number) || 1;
+      const cleanId = (userId || ("s" + (num < 10 ? "0" + num : num))).trim().toLowerCase();
+      const cleanPw = (password && String(password).length >= 6) ? String(password) : "123456";
+      const email = `${cleanId}@${authDomain}`;
+
+      // 1. Firebase Authentication 계정 생성
+      let localId = "";
+      let idToken = "";
+      if (isRealFirebase) {
+        try {
+          const authRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: cleanPw, returnSecureToken: true })
+          });
+          const authData = await authRes.json();
+          if (authRes.ok) {
+            localId = authData.localId;
+            idToken = authData.idToken;
+          } else if (authData.error && authData.error.message && authData.error.message.includes("EMAIL_EXISTS")) {
+            localId = "existing_" + cleanId;
+          }
+        } catch(err) {
+          console.warn("Firebase Auth 단일 등록 경고:", err.message);
+        }
+
+        // 2. Firestore 프로필 저장
+        try {
+          const docId = localId || cleanId;
+          const fsUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${docId}`;
+          const fsHeaders = { "Content-Type": "application/json" };
+          if (idToken) fsHeaders["Authorization"] = `Bearer ${idToken}`;
+          await fetch(fsUrl, {
+            method: "PATCH",
+            headers: fsHeaders,
+            body: JSON.stringify({
+              fields: {
+                userId: { stringValue: cleanId },
+                name: { stringValue: name },
+                nickname: { stringValue: nickname || name },
+                number: { integerValue: String(num) },
+                classId: { stringValue: String(classId) },
+                role: { stringValue: "student" },
+                treeLevel: { integerValue: "1" },
+                totalLeaves: { integerValue: "0" },
+                totalFruits: { integerValue: "0" },
+                createdAt: { stringValue: new Date().toISOString() }
+              }
+            })
+          });
+        } catch(fsErr) {
+          console.warn("Firestore 동기화 경고:", fsErr.message);
+        }
+      }
+
+      // 3. 로컬 DB 동기화
+      let localDb = null;
+      try {
+        const saved = localStorage.getItem("BOOK_VILLAGE_MOCK_STORAGE");
+        localDb = saved ? JSON.parse(saved) : null;
+      } catch(e) {}
+      if (!localDb) localDb = { users: [] };
+      if (!localDb.users) localDb.users = [];
+
+      let user = localDb.users.find(u => u.userId === cleanId);
+      if (user) {
+        user.name = name;
+        user.nickname = nickname || name;
+        user.number = num;
+        user.initialPassword = cleanPw;
+      } else {
+        user = {
+          userId: cleanId,
+          name: name,
+          nickname: nickname || name,
+          number: num,
+          classId: classId,
+          role: "student",
+          treeLevel: 1,
+          totalLeaves: 0,
+          totalFruits: 0,
+          badges: ["책마을입주민"],
+          initialPassword: cleanPw
+        };
+        localDb.users.push(user);
+      }
+      localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(localDb));
+
+      return { success: true, user, initialPassword: cleanPw };
+    },
+
+    // 학생 비밀번호 초기화 (123456)
+    async resetStudentPassword(userId, newPassword = "123456") {
+      let localDb = null;
+      try {
+        const saved = localStorage.getItem("BOOK_VILLAGE_MOCK_STORAGE");
+        localDb = saved ? JSON.parse(saved) : null;
+      } catch(e) {}
+      if (localDb && localDb.users) {
+        const u = localDb.users.find(x => x.userId === userId);
+        if (u) {
+          u.initialPassword = newPassword;
+          localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(localDb));
+        }
+      }
+      return { success: true, tempPassword: newPassword };
+    },
+
+    // 학생 삭제
+    async deleteStudent(userId) {
+      if (global.FirebaseRepo) {
+        try { await global.FirebaseRepo.deleteStudent(userId); } catch(e) {}
+      }
+      let localDb = null;
+      try {
+        const saved = localStorage.getItem("BOOK_VILLAGE_MOCK_STORAGE");
+        localDb = saved ? JSON.parse(saved) : null;
+      } catch(e) {}
+      if (localDb && localDb.users) {
+        localDb.users = localDb.users.filter(u => u.userId !== userId);
+        localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(localDb));
+      }
+      return { success: true };
     }
   };
 

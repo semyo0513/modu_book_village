@@ -126,6 +126,20 @@ const Feed = {
               </div>
             ` : ''}
           </div>
+
+          <!-- 선생님 칭찬 스탬프 및 피드백 표시 -->
+          ${r.teacherFeedback ? `
+            <div class="mt-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 shadow-sm flex items-start gap-2.5">
+              <span class="text-2xl flex-shrink-0">${r.teacherFeedback.stamp ? r.teacherFeedback.stamp.split(" ")[0] : "🏅"}</span>
+              <div class="flex-1 overflow-hidden">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-black text-amber-900">${r.teacherFeedback.stamp || "선생님 칭찬 도장"}</span>
+                  <span class="text-[10px] text-amber-600 font-semibold">${r.teacherFeedback.teacherName || "담임선생님"}</span>
+                </div>
+                <p class="text-xs text-amber-800 mt-0.5 leading-relaxed font-medium">"${r.teacherFeedback.comment || ''}"</p>
+              </div>
+            </div>
+          ` : ''}
         </div>
 
         <!-- 하단 소통 인터랙션 버튼 -->
@@ -150,6 +164,14 @@ const Feed = {
               💬 <span>댓글/대화</span>
             </button>
           </div>
+          ${(typeof Auth !== 'undefined' && Auth.isTeacher && Auth.isTeacher()) ? `
+            <button 
+              onclick="Admin.openTeacherFeedbackModal('${r.recordId}', '${r.userName}', '${(r.title || r.book?.title || '독서 기록').replace(/'/g, "\\'")}')"
+              class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg text-[11px] font-bold transition flex items-center gap-1"
+            >
+              🏅 칭찬 도장
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
