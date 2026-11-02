@@ -90,6 +90,9 @@ const Admin = {
             <button onclick="Admin.openBatchRegisterModal()" class="px-3.5 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-xl text-xs font-bold transition border border-purple-400 flex items-center gap-1.5">
               <span>👥</span> CSV 일괄 등록
             </button>
+            <button onclick="Admin.handleSyncToFirestore()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-1.5" title="로컬 스토리지의 독서 기록을 Cloud Firestore로 일괄 업로드">
+              <span>🔥</span> 파이어스토어 동기화
+            </button>
             <button onclick="Admin.openSystemSettingsModal()" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition flex items-center gap-1">
               <span>⚙️</span> API 설정
             </button>
@@ -804,5 +807,40 @@ const Admin = {
     CONFIG.GAS_API_URL = url;
     alert("설정이 저장되었습니다.");
     Modal.closeModal("modal-system-settings");
+  },
+
+  // 로컬 스토리지 독서 기록을 Cloud Firestore로 일괄 동기화
+  async handleSyncToFirestore() {
+    if (!confirm("로컬 스토리지에 저장되어 있는 모든 독서 기록과 학급 나무 데이터를 Cloud Firestore로 일괄 업로드하시겠습니까?")) {
+      return;
+    }
+
+    if (!window.FirebaseRepo) {
+      alert("Firebase 연동 모듈을 찾을 수 없습니다.");
+      return;
+    }
+
+    const btn = event?.currentTarget;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<span>⏳</span> 전송 중...`;
+    }
+
+    try {
+      const res = await window.FirebaseRepo.syncLocalToFirestore();
+      if (res.success) {
+        alert(res.message);
+        await this.loadClassStats();
+      } else {
+        alert("동기화 알림: " + res.message);
+      }
+    } catch(err) {
+      alert("동기화 중 오류 발생: " + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>🔥</span> 파이어스토어 동기화`;
+      }
+    }
   }
 };
