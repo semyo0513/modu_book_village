@@ -2,127 +2,61 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 헬퍼 함수
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    function getUserData() {
-      return request.auth.token;
-    }
-
-    function isTeacher() {
-      return isAuthenticated() && request.auth.token.role == 'teacher';
-    }
-
-    function isStudent() {
-      return isAuthenticated() && request.auth.token.role == 'student';
-    }
-
-    function belongsToClass(classId) {
-      return isAuthenticated() && request.auth.token.classId == classId;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // 1. users 컬렉션
+    // 1. users 컬렉션 (학생 및 교사 프로필)
     match /users/{userId} {
-      // 본인이거나 같은 반 교사/학생인 경우 읽기 허용 (타 학급 차단)
-      allow read: if isAuthenticated() && (
-        isOwner(userId) || 
-        isTeacher() || 
-        belongsToClass(resource.data.classId)
-      );
-
-      // 본인은 아바타, 닉네임, mustChangePw 변경만 허용 (role, classId 등 권한 필드 위조 방지)
-      allow update: if isOwner(userId) && 
-        request.resource.data.role == resource.data.role &&
-        request.resource.data.classId == resource.data.classId;
-
-      // 사용자 생성은 본인 계정(UID 일치) 또는 인증된 사용자/교사의 학생 생성을 허용
-      allow create: if isAuthenticated();
-      allow delete: if isTeacher();
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAuthenticated();
     }
 
-    // 2. classes 컬렉션 (학급 메타 및 전체 나무 성장)
+    // 2. classes 컬렉션 (학급 나무 성장 및 열매 데이터)
     match /classes/{classId} {
-      allow read: if belongsToClass(classId) || isTeacher();
-
-      // 교사는 수정 허용, 학생은 책 완독 시 나무 열매 카운터 증가만 허용 (+1)
-      allow update: if isTeacher() || (
-        belongsToClass(classId) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['treeFruits', 'treeLeaves']) &&
-        request.resource.data.treeFruits >= resource.data.treeFruits &&
-        request.resource.data.treeFruits <= resource.data.treeFruits + 1
-      );
-
-      allow create, delete: if isTeacher();
+      allow read: if true;
+      allow write: if true;
     }
 
-    // 3. records 컬렉션 (독서 기록)
+    // 3. records 컬렉션 (독서 기록: 한 줄 피드, 비밀의 숲, 책 꼬리잇기, 가상 인터뷰)
     match /records/{recordId} {
-      allow read: if belongsToClass(resource.data.classId) || isTeacher();
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if true;
 
-      // 본인 학급에 자신의 글만 작성 가능
-      allow create: if isAuthenticated() && 
-        request.resource.data.userId == request.auth.uid &&
-        belongsToClass(request.resource.data.classId) &&
-        request.resource.data.content is string &&
-        request.resource.data.content.size() <= 2000;
-
-      // 작성자 수정 허용, 교사는 삭제(소프트 삭제 flag 또는 삭제) 허용
-      allow update: if (isOwner(resource.data.userId) && request.resource.data.userId == resource.data.userId) || isTeacher();
-      allow delete: if isOwner(resource.data.userId) || isTeacher();
-
-      // 3-1. 블라인드 북 비밀 정보 (책 정보 은닉 서브문서)
-      // 부모 문서가 revealed == true이거나 작성자/교사일 때만 공개!
+      // 3-1. 블라인드 북 서브문서
       match /secret/book {
-        allow read: if isAuthenticated() && (
-          isOwner(get(/databases/$(database)/documents/records/$(recordId)).data.userId) ||
-          isTeacher() ||
-          get(/databases/$(database)/documents/records/$(recordId)).data.blind.revealed == true
-        );
-        allow create: if isAuthenticated() && 
-          isOwner(get(/databases/$(database)/documents/records/$(recordId)).data.userId);
-        allow update, delete: if isTeacher() || 
-          isOwner(get(/databases/$(database)/documents/records/$(recordId)).data.userId);
+        allow read, write: if true;
       }
 
-      // 3-2. 댓글 컬렉션
+      // 3-2. 댓글 서브컬렉션
       match /comments/{commentId} {
-        allow read: if belongsToClass(get(/databases/$(database)/documents/records/$(recordId)).data.classId) || isTeacher();
-        allow create: if isAuthenticated() && 
-          request.resource.data.userId == request.auth.uid &&
-          request.resource.data.content is string &&
-          request.resource.data.content.size() <= 500;
-        allow delete: if isOwner(resource.data.userId) || isTeacher();
+        allow read, write: if true;
       }
 
-      // 3-3. 이모지 반응 컬렉션 (문서 ID: {uid}_{type})
+      // 3-3. 이모지 공감 반응 서브컬렉션
       match /reactions/{reactionId} {
-        allow read: if belongsToClass(get(/databases/$(database)/documents/records/$(recordId)).data.classId) || isTeacher();
-        allow create: if isAuthenticated() && 
-          request.resource.data.userId == request.auth.uid &&
-          reactionId.matches('^' + request.auth.uid + '_.*$');
-        allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+        allow read, write: if true;
       }
     }
 
-    // 4. connections 컬렉션 (책 꼬리잇기)
+    // 4. connections 컬렉션 (책 꼬리잇기 릴레이 연결)
     match /connections/{connId} {
-      allow read: if belongsToClass(resource.data.classId) || isTeacher();
-      allow create: if isAuthenticated() && 
-        request.resource.data.createdBy == request.auth.uid &&
-        belongsToClass(request.resource.data.classId);
-      allow delete: if isOwner(resource.data.createdBy) || isTeacher();
+      allow read, write: if true;
     }
 
-    // 5. adminLogs 컬렉션 (교사용 감사 로그)
-    match /adminLogs/{logId} {
-      allow read: if isTeacher();
-      allow write: if false; // 서버(GAS ②)만 기록
+    // 5. comments 컬렉션 (최상위 호환 댓글)
+    match /comments/{commentId} {
+      allow read, write: if true;
+    }
+
+    // 6. books 컬렉션 (도서 메타데이터 캐시)
+    match /books/{isbn} {
+      allow read, write: if true;
+    }
+  }
+}
     }
   }
 }

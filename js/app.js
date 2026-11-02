@@ -7,6 +7,9 @@ const App = {
 
   async init() {
     Auth.updateNavbarUI();
+    if (window.FirebaseRepo) {
+      window.FirebaseRepo.init().catch(e => console.warn("[Firebase init]", e));
+    }
     Village.init();
 
     // URL 해시 라우팅 지원

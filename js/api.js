@@ -403,13 +403,63 @@ const API = {
     }
 
     const token = Auth.getToken();
+    const currentUser = (typeof Auth !== "undefined" && Auth.getCurrentUser) ? Auth.getCurrentUser() : null;
 
-    // 1. Mock 모드일 때
+    // 1. Firebase Cloud Firestore 실시간 연동 (활성화된 경우 우선 처리)
+    if (typeof window !== "undefined" && window.FirebaseRepo) {
+      try {
+        if (action === "createRecord") {
+          const fbRes = await window.FirebaseRepo.createRecord(payload, currentUser);
+          if (fbRes && fbRes.success) {
+            // 로컬 스토리지에도 동기화하여 실시간 UI 반영
+            this.handleMockRequest("createRecord", payload, token);
+            return {
+              success: true,
+              recordId: fbRes.recordId,
+              message: "파이어베이스에 독서 기록이 성공적으로 등록되었습니다!"
+            };
+          }
+        } else if (action === "getRecords") {
+          const records = await window.FirebaseRepo.getRecords(payload);
+          if (records && records.length > 0) {
+            return { success: true, records };
+          }
+        } else if (action === "addComment") {
+          const fbRes = await window.FirebaseRepo.addComment({ ...payload, user: currentUser });
+          if (fbRes && fbRes.success) {
+            this.handleMockRequest("addComment", payload, token);
+            return { success: true, commentId: fbRes.commentId, message: "댓글이 파이어베이스에 등록되었습니다!" };
+          }
+        } else if (action === "getComments") {
+          const comments = await window.FirebaseRepo.getComments(payload.recordId);
+          if (comments && comments.length > 0) {
+            return { success: true, comments };
+          }
+        } else if (action === "toggleReaction") {
+          await window.FirebaseRepo.toggleReaction({ ...payload, user: currentUser });
+          return this.handleMockRequest(action, payload, token);
+        } else if (action === "getVillageStatus") {
+          const status = await window.FirebaseRepo.getVillageStatus(payload.classId);
+          if (status && status.success && (status.classTree.totalLeaves > 0 || status.recentNews.length > 0)) {
+            return status;
+          }
+        } else if (action === "getRelayGraph") {
+          const graph = await window.FirebaseRepo.getRelayGraph(payload.classId);
+          if (graph && graph.success && graph.nodes.length > 0) {
+            return graph;
+          }
+        }
+      } catch (fbErr) {
+        console.warn(`[Firebase] ${action} 처리 중 오류, 로컬 저장소로 안전 전환:`, fbErr.message);
+      }
+    }
+
+    // 2. Mock 모드일 때
     if (CONFIG.IS_MOCK_MODE()) {
       return this.handleMockRequest(action, payload, token);
     }
 
-    // 2. 실제 GAS 백엔드 요청
+    // 3. 실제 GAS 백엔드 요청
     if (!CONFIG.GAS_API_URL) {
       // GAS URL 미설정 시 로컬 Mock 핸들러로 폴백 처리
       return this.handleMockRequest(action, payload, token);
