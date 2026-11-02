@@ -138,8 +138,8 @@
       </div>
 
       <!-- 3D Three.js 월드 캔버스 컨테이너 -->
-      <div id="canvas-wrap" class="relative w-full h-[620px] rounded-3xl overflow-hidden shadow-2xl border-4 border-emerald-300/40 bg-gradient-to-b from-sky-300 to-emerald-200">
-        <div id="canvas-container" class="w-full h-full cursor-pointer"></div>
+      <div id="canvas-wrap" class="relative w-full rounded-3xl overflow-hidden shadow-2xl border-4 border-emerald-300/40 bg-gradient-to-b from-sky-300 to-emerald-200" style="width: 100%; height: 620px; min-height: 520px; position: relative; display: block;">
+        <div id="canvas-container" class="w-full h-full cursor-pointer" style="width: 100%; height: 100%; position: absolute; inset: 0;"></div>
 
         <!-- 모바일 가상 조이스틱 터치 존 -->
         <div id="virtual-joystick-zone" class="absolute bottom-6 left-6 w-28 h-28 rounded-full bg-black/25 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center touch-none select-none sm:hidden z-30">
@@ -147,7 +147,7 @@
         </div>
 
         <!-- 3D 맵 오버레이 힌트 배지 -->
-        <div class="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-2xl text-[11px] font-bold text-gray-700 shadow border border-gray-100 hidden sm:flex items-center gap-2">
+        <div class="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-2xl text-[11px] font-bold text-gray-700 shadow border border-gray-100 hidden sm:flex items-center gap-2 z-20">
           <span>🌳 중앙 독서나무 | 📚 도서관 | 📮 우체국 | 💬 광장 | 🎙️ 방송국 | 🔮 비밀의숲</span>
         </div>
       </div>
@@ -602,6 +602,10 @@
   <!-- ========================================== -->
   <!-- 4. App Script Inclusions                   -->
   <!-- ========================================== -->
+  <!-- Three.js UMD Engine (로컬 file:/// 및 온라인 웹서버 100% 호환) -->
+  <script src="vendor/three.min.js"></script>
+
+  <!-- Core App Scripts -->
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
@@ -613,61 +617,35 @@
   <script src="js/myroom.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
-  <!-- 3D Three.js Main Controller -->
-  <script type="module">
-    try {
-      const { Main3D } = await import("./js/world/main3d.js");
-      const { CharacterCustomizer } = await import("./js/world/characterCustomizer.js");
-      const { BuildingModal } = await import("./js/world/buildingModal.js");
-      const { CsvParser } = await import("./js/admin/csvParser.js");
-      const { Validator } = await import("./js/admin/validator.js");
-      const { AdminApi } = await import("./js/admin/adminApi.js");
 
-      window.Main3D = Main3D;
-      window.CharacterCustomizer = CharacterCustomizer;
-      window.BuildingModal = BuildingModal;
-      window.CsvParser = CsvParser;
-      window.Validator = Validator;
-      window.AdminApi = AdminApi;
+  <!-- Admin CSV Modules -->
+  <script src="js/admin/csvParser.js"></script>
+  <script src="js/admin/validator.js"></script>
+  <script src="js/admin/adminApi.js"></script>
 
-      // 3D 월드 초기화
-      await Main3D.init();
-      CharacterCustomizer.init();
-    } catch (e) {
-      console.warn("3D 모듈 로드 실패 (2D 모드로 폴백):", e);
-      // 2D 폴백 컨테이너 강제 표시
-      const canvasWrap = document.getElementById("canvas-wrap");
-      const village2D = document.getElementById("village-2d-container");
-      const toggleBtn = document.getElementById("btn-mode-toggle");
-      if (canvasWrap) canvasWrap.classList.add("hidden");
-      if (village2D) village2D.classList.remove("hidden");
-      if (toggleBtn) toggleBtn.innerHTML = "🎮 3D 게임 모드로 전환";
-      if (window.Village && typeof window.Village.init === "function") {
-        window.Village.init();
-      }
-    }
-  </script>
+  <!-- 3D World Subsystems -->
+  <script src="js/world/engine.js"></script>
+  <script src="js/world/tree.js"></script>
+  <script src="js/world/village.js"></script>
+  <script src="js/world/player.js"></script>
+  <script src="js/world/controls.js"></script>
+  <script src="js/world/camera.js"></script>
+  <script src="js/world/buildingModal.js"></script>
+  <script src="js/world/interactions.js"></script>
+  <script src="js/world/characterCustomizer.js"></script>
+  <script src="js/world/main3d.js"></script>
 
-  <!-- Fallback Safety Watcher: 모듈 스크립트가 완전히 차단된 로컬 file:/// 환경 대응 -->
+  <!-- 3D World Startup & Fallback Handler -->
   <script>
-    setTimeout(function() {
-      if (!window.Main3D || !window.Main3D.isInitialized) {
-        var canvasContainer = document.getElementById("canvas-container");
-        var hasCanvas = canvasContainer && canvasContainer.querySelector("canvas");
-        if (!hasCanvas) {
-          console.warn("3D 캔버스가 감지되지 않아 2D 모드로 자동 전환합니다.");
-          var canvasWrap = document.getElementById("canvas-wrap");
-          var village2D = document.getElementById("village-2d-container");
-          var toggleBtn = document.getElementById("btn-mode-toggle");
-          if (canvasWrap) canvasWrap.classList.add("hidden");
-          if (village2D) village2D.classList.remove("hidden");
-          if (toggleBtn) toggleBtn.innerHTML = "🎮 3D 게임 모드로 전환";
-          if (window.Village && typeof window.Village.init === "function") {
-            window.Village.init();
-          }
-        }
+    document.addEventListener("DOMContentLoaded", function() {
+      // 3D 월드 엔진 시작
+      if (window.Main3D) {
+        window.Main3D.init();
       }
-    }, 1200);
+      if (window.CharacterCustomizer) {
+        window.CharacterCustomizer.init();
+      }
+    });
   </script>
 </body>
 </html>
