@@ -5,14 +5,14 @@
 
 (function(global) {
   const CONFIG = {
-    // Firebase 웹 설정 (Spark 플랜 서울 리전)
+    // Firebase 웹 설정 (modu-book-village)
     FIREBASE: {
-      apiKey: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_API_KEY")) || "AIzaSy_MOCK_API_KEY_FOR_TESTING",
-      authDomain: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_AUTH_DOMAIN")) || "book-village-demo.firebaseapp.com",
-      projectId: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_PROJECT_ID")) || "book-village-demo",
-      storageBucket: "book-village-demo.appspot.com",
-      messagingSenderId: "1234567890",
-      appId: "1:1234567890:web:abcdef123456"
+      apiKey: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_API_KEY")) || "AIzaSyBjAM4dw2O4fgooftg1fAB9F5zpe_PRJeU",
+      authDomain: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_AUTH_DOMAIN")) || "modu-book-village.firebaseapp.com",
+      projectId: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_PROJECT_ID")) || "modu-book-village",
+      storageBucket: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_STORAGE_BUCKET")) || "modu-book-village.firebasestorage.app",
+      messagingSenderId: "277148323726",
+      appId: "1:277148323726:web:5bdff6d6d85b0205e7dedf"
     },
 
     // 의사 이메일 도메인
