@@ -16,8 +16,8 @@ export const Player = {
   torsoMesh: null,
   accessoryGroup: null,
   nameTag: null,
-  speed: 12.0, // 맵이 넓어졌으므로 이동 속도를 9.0에서 12.0으로 시원하게 상향
-  position: new THREE.Vector3(0, 0, 22),
+  speed: 13.0,
+  position: new THREE.Vector3(0, 0, 0), // 탁 트인 마을 중앙 십자로에서 시작 (장애물 없는 안전 구역)
   targetRotation: 0,
   isMoving: false,
   walkCycle: 0,
@@ -291,6 +291,28 @@ export const Player = {
   },
 
   move(moveX, moveZ, delta, colliders = []) {
+    // 1. 끼임 방지 탈출 로직 (Push-out Repulsion)
+    // 캐릭터가 어떤 이유로든 충돌체 반경 내에 겹쳐있는 경우 바깥쪽으로 즉시 밀어내어 갇힘 원천 방지
+    for (const col of colliders) {
+      const minSafeDist = (col.radius || 3.0) + 0.85;
+      const curDx = this.position.x - col.x;
+      const curDz = this.position.z - col.z;
+      const curDist = Math.sqrt(curDx * curDx + curDz * curDz);
+
+      if (curDist < minSafeDist) {
+        if (curDist > 0.001) {
+          const pushX = (curDx / curDist) * (minSafeDist - curDist);
+          const pushZ = (curDz / curDist) * (minSafeDist - curDist);
+          this.position.x += pushX;
+          this.position.z += pushZ;
+        } else {
+          // 완전 겹침 시 남쪽으로 밀어내기
+          this.position.z += minSafeDist;
+        }
+      }
+    }
+
+    // 2. 사용자 입력에 따른 이동 처리
     if (Math.abs(moveX) > 0.001 || Math.abs(moveZ) > 0.001) {
       this.isMoving = true;
 
@@ -300,30 +322,36 @@ export const Player = {
       while (diff > Math.PI) diff -= Math.PI * 2;
       this.mesh.rotation.y += diff * 12 * delta;
 
-      const nextX = this.position.x + moveX * this.speed * delta;
-      const nextZ = this.position.z + moveZ * this.speed * delta;
+      const stepX = moveX * this.speed * delta;
+      const stepZ = moveZ * this.speed * delta;
+      const nextX = this.position.x + stepX;
+      const nextZ = this.position.z + stepZ;
 
-      // 넓어진 맵 반경(110) 적용
+      // 넓어진 맵 반경(125) 적용
       const distFromCenter = Math.sqrt(nextX * nextX + nextZ * nextZ);
-      if (distFromCenter < 110) {
+      if (distFromCenter < 125) {
         let canMoveX = true;
         let canMoveZ = true;
 
         for (const col of colliders) {
-          const r = col.radius || 3.0;
-          const dx = nextX - col.x;
-          const dz = this.position.z - col.z;
-          if (Math.sqrt(dx * dx + dz * dz) < r + 0.8) {
+          const minSafeDist = (col.radius || 3.0) + 0.85;
+
+          // X축 이동 시 충돌 검사
+          const testX_dx = nextX - col.x;
+          const testX_dz = this.position.z - col.z;
+          if (Math.sqrt(testX_dx * testX_dx + testX_dz * testX_dz) < minSafeDist) {
             canMoveX = false;
           }
 
-          const dx2 = this.position.x - col.x;
-          const dz2 = nextZ - col.z;
-          if (Math.sqrt(dx2 * dx2 + dz2 * dz2) < r + 0.8) {
+          // Z축 이동 시 충돌 검사
+          const testZ_dx = this.position.x - col.x;
+          const testZ_dz = nextZ - col.z;
+          if (Math.sqrt(testZ_dx * testZ_dx + testZ_dz * testZ_dz) < minSafeDist) {
             canMoveZ = false;
           }
         }
 
+        // X 또는 Z 축으로 독립적으로 이동 (부드러운 벽 슬라이딩)
         if (canMoveX) this.position.x = nextX;
         if (canMoveZ) this.position.z = nextZ;
       }

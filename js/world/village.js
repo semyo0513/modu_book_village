@@ -420,64 +420,85 @@ export const VillageWorld = {
     const plaza = new THREE.Group();
     plaza.position.set(def.pos[0], def.pos[1], def.pos[2]);
 
-    // 1. 대형 원형 석조 광장 바닥
-    const baseGeo = new THREE.CylinderGeometry(14, 14.5, 0.4, 32);
+    // 1. 대형 원형 석조 광장 바닥 (보행 가능한 넓은 원형 광장, 반경 18)
+    const baseGeo = new THREE.CylinderGeometry(18, 18.5, 0.3, 32);
     const baseMat = new THREE.MeshLambertMaterial({ color: 0xd4b886 });
     const base = new THREE.Mesh(baseGeo, baseMat);
-    base.position.y = 0.2;
+    base.position.y = 0.15;
     base.receiveShadow = true;
     plaza.add(base);
 
-    // 2. 광장 중앙 분수대 (Water Fountain)
+    // 2. 광장 중앙 분수대 (Water Fountain - 반경 3.0으로 슬림화)
     const fountainRim = new THREE.Mesh(
-      new THREE.CylinderGeometry(4.2, 4.4, 1.2, 24),
+      new THREE.CylinderGeometry(3.0, 3.2, 1.1, 24),
       new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
     );
-    fountainRim.position.y = 0.8;
+    fountainRim.position.y = 0.7;
     fountainRim.castShadow = true;
     plaza.add(fountainRim);
 
     // 분수대 물
     const fountainWater = new THREE.Mesh(
-      new THREE.CircleGeometry(4.0, 24),
+      new THREE.CircleGeometry(2.8, 24),
       new THREE.MeshLambertMaterial({ color: 0x38bdf8 })
     );
     fountainWater.rotation.x = -Math.PI / 2;
-    fountainWater.position.y = 1.35;
+    fountainWater.position.y = 1.2;
     plaza.add(fountainWater);
 
-    // 분수대 중심 기둥
+    // 분수대 중심 조각 기둥
     const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.6, 0.9, 2.8, 12),
+      new THREE.CylinderGeometry(0.5, 0.7, 2.5, 12),
       new THREE.MeshLambertMaterial({ color: 0x94a3b8 })
     );
-    pillar.position.y = 2.4;
+    pillar.position.y = 2.0;
     pillar.castShadow = true;
     plaza.add(pillar);
 
-    // 3. 광장 대형 게시판 (한 줄 피드 알림판)
+    // 3. 광장 피드 대형 알림판 (중앙 통로를 막지 않도록 동쪽 측면 X=10.5에 여유롭게 배치)
     const boardGroup = new THREE.Group();
-    boardGroup.position.set(0, 0, 7.5);
+    boardGroup.position.set(10.5, 0, 0);
+    boardGroup.rotation.y = -Math.PI / 2; // 광장 중심을 향해 바라봄
 
     const board = new THREE.Mesh(
-      new THREE.BoxGeometry(6.5, 3.8, 0.4),
+      new THREE.BoxGeometry(6.0, 3.6, 0.4),
       new THREE.MeshLambertMaterial({ color: 0x8b5a2b })
     );
-    board.position.y = 3.2;
+    board.position.y = 2.8;
     board.castShadow = true;
     boardGroup.add(board);
 
+    // 알림판 다리 2개
+    const legGeo = new THREE.CylinderGeometry(0.18, 0.18, 2.8, 8);
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x5c3a21 });
+    const leg1 = new THREE.Mesh(legGeo, legMat);
+    leg1.position.set(-2.2, 1.4, 0);
+    const leg2 = leg1.clone();
+    leg2.position.set(2.2, 1.4, 0);
+    boardGroup.add(leg1, leg2);
+
     const sign = this.createFairySign("마을 광장 피드", "💬");
-    sign.position.set(0, 5.5, 0.25);
+    sign.position.set(0, 5.0, 0.25);
     boardGroup.add(sign);
     plaza.add(boardGroup);
 
     scene.add(plaza);
 
-    this.colliders.push({ x: def.pos[0], z: def.pos[2], radius: 4.8 });
+    // 충돌체: 분수대 중심 (반경 3.5)
+    this.colliders.push({ x: def.pos[0], z: def.pos[2], radius: 3.5 });
+    // 충돌체: 동쪽 게시판 (반경 2.0)
+    this.colliders.push({ x: def.pos[0] + 10.5, z: def.pos[2], radius: 2.0 });
+
+    // 상호작용 트리거: 게시판 앞 (반경 4.0으로 넉넉하게 감지)
     this.interactables.push({
       id: def.id,
       name: def.name,
+      desc: def.desc,
+      x: def.pos[0] + 7.5,
+      z: def.pos[2],
+      radius: 4.0
+    });
+  },
       desc: def.desc,
       x: def.pos[0],
       z: def.pos[2] + 9.5,
