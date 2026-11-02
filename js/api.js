@@ -449,12 +449,49 @@ const API = {
     switch (action) {
       case "login": {
         const { userId, password } = payload;
+
+        // 1. 실제 Firebase Auth 로그인 시도
+        const fbConfig = (window.CONFIG && window.CONFIG.FIREBASE) || {};
+        const apiKey = fbConfig.apiKey;
+        if (apiKey && !apiKey.includes("MOCK")) {
+          const authDomain = fbConfig.authDomain || "modu-book-village.firebaseapp.com";
+          const email = userId.includes("@") ? userId : `${userId}@${authDomain}`;
+          const checkPws = [password];
+          if (password === "1234") checkPws.push("123456");
+          if (password === "admin1234") checkPws.push("admin1234");
+
+          for (const tryPw of checkPws) {
+            try {
+              const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, password: tryPw, returnSecureToken: true })
+              });
+              const data = await res.json();
+              if (res.ok) {
+                const matchedUser = db.users.find(u => u.userId === userId) || {
+                  userId: userId,
+                  name: data.displayName || (userId === "teacher" ? "선생님" : `${userId} 학생`),
+                  classId: "1반",
+                  role: userId === "teacher" ? "teacher" : "student",
+                  treeLevel: 1,
+                  totalLeaves: 0,
+                  totalFruits: 0,
+                  badges: ["책마을입주민"]
+                };
+                return { success: true, user: matchedUser, token: data.idToken };
+              }
+            } catch (err) {}
+          }
+        }
+
+        // 2. 로컬 계정 폴백
         const user = db.users.find(u => u.userId === userId);
-        if (user && (password === "1234" || password === "admin1234" || user.userId === userId)) {
+        if (user && (password === "1234" || password === "123456" || password === "admin1234" || user.userId === userId || user.initialPassword === password)) {
           const mockToken = "mock_token_" + userId + "_" + Date.now();
           return { success: true, user: user, token: mockToken };
         }
-        return { success: false, message: "아이디나 비밀번호(기본: 1234 / 관리자: admin1234)를 확인하세요." };
+        return { success: false, message: "아이디나 비밀번호(기본: 1234 또는 123456 / 관리자: admin1234)를 확인하세요." };
       }
 
       case "searchAladin": {
@@ -639,16 +676,38 @@ const API = {
 
       case "batchRegisterStudents": {
         if (!currentUser || currentUser.role !== "teacher") return { success: false, message: "교사 권한이 필요합니다." };
+
+        const rows = (payload.students || []).map((st, i) => {
+          const num = Number(st.number) || (i + 1);
+          return {
+            number: num,
+            name: st.name,
+            nickname: st.name,
+            classId: payload.classId || "1반",
+            computedLoginId: st.userId || ("s" + (num < 10 ? "0" + num : num)),
+            initialPassword: st.password || "123456"
+          };
+        });
+
+        // 실제 Firebase 또는 AdminApi 연동이 가능하면 일괄 생성 실행
+        if (typeof window !== "undefined" && window.AdminApi && window.AdminApi.bulkCreate) {
+          const bulkRes = await window.AdminApi.bulkCreate(rows);
+          return {
+            success: true,
+            addedCount: bulkRes.successCount,
+            message: `${bulkRes.successCount}명의 학생 계정이 파이어베이스에 성공적으로 생성 및 등록되었습니다!`
+          };
+        }
+
         let count = 0;
-        payload.students.forEach(st => {
-          const num = Number(st.number) || 0;
-          const uid = st.userId || ("s" + (num < 10 ? "0" + num : num));
+        rows.forEach(r => {
+          const uid = r.computedLoginId;
           if (!db.users.find(u => u.userId === uid)) {
             db.users.push({
               userId: uid,
-              name: st.name,
-              classId: payload.classId || "1반",
-              number: num,
+              name: r.name,
+              classId: r.classId,
+              number: r.number,
               role: "student",
               treeLevel: 1,
               totalLeaves: 0,

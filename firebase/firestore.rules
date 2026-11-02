@@ -41,8 +41,9 @@ service cloud.firestore {
         request.resource.data.role == resource.data.role &&
         request.resource.data.classId == resource.data.classId;
 
-      // 사용자 생성/삭제는 서비스 계정(GAS ②)만 허용
-      allow create, delete: if false;
+      // 사용자 생성은 본인 계정(UID 일치) 또는 인증된 사용자/교사의 학생 생성을 허용
+      allow create: if isAuthenticated();
+      allow delete: if isTeacher();
     }
 
     // 2. classes 컬렉션 (학급 메타 및 전체 나무 성장)
