@@ -31,13 +31,13 @@ export const Engine = {
     // 1. Scene
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#87CEEB"); // 화사한 동물의 숲 하늘색
-    this.scene.fog = new THREE.FogExp2("#87CEEB", 0.015);
+    this.scene.fog = new THREE.FogExp2("#87CEEB", 0.005); // 넓어진 맵에 맞춰 안개 거리 완화
 
     // 2. Camera
     const width = this.container.clientWidth || window.innerWidth;
     const height = this.container.clientHeight || window.innerHeight;
-    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 500);
-    this.camera.position.set(0, 18, 26);
+    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 800);
+    this.camera.position.set(0, 22, 35);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -70,17 +70,17 @@ export const Engine = {
     this.scene.add(ambientLight);
 
     // 태양광 (Directional Light) - 그림자 생성
-    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.0);
-    sunLight.position.set(25, 45, 20);
+    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.1);
+    sunLight.position.set(60, 95, 50);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
     sunLight.shadow.mapSize.height = 1024;
     sunLight.shadow.camera.near = 10;
-    sunLight.shadow.camera.far = 100;
-    sunLight.shadow.camera.left = -35;
-    sunLight.shadow.camera.right = 35;
-    sunLight.shadow.camera.top = 35;
-    sunLight.shadow.camera.bottom = -35;
+    sunLight.shadow.camera.far = 280;
+    sunLight.shadow.camera.left = -95;
+    sunLight.shadow.camera.right = 95;
+    sunLight.shadow.camera.top = 95;
+    sunLight.shadow.camera.bottom = -95;
     this.scene.add(sunLight);
 
     // 반사광 (부드러운 지면 반사)

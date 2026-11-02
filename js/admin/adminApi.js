@@ -13,7 +13,8 @@ export const AdminApi = {
       return { success: false, message: "교사 권한이 필요합니다." };
     }
 
-    if (!CONFIG.GAS_ADMIN_GATEWAY_URL) {
+    const gasUrl = CONFIG.GAS_API_URL || CONFIG.GAS_ADMIN_GATEWAY_URL;
+    if (!gasUrl) {
       // Mock 모드 일괄 생성
       return this.mockBulkCreate(rows, onProgress);
     }
@@ -31,7 +32,7 @@ export const AdminApi = {
       };
 
       try {
-        const res = await fetch(CONFIG.GAS_ADMIN_GATEWAY_URL, {
+        const res = await fetch(gasUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
@@ -80,7 +81,8 @@ export const AdminApi = {
 
   async resetPassword(uid) {
     if (!AuthService.isTeacher()) return { success: false, message: "교사 권한 필요" };
-    if (!CONFIG.GAS_ADMIN_GATEWAY_URL) {
+    const gasUrl = CONFIG.GAS_API_URL || CONFIG.GAS_ADMIN_GATEWAY_URL;
+    if (!gasUrl) {
       return { success: true, tempPassword: "mock" + Math.floor(1000 + Math.random() * 9000) };
     }
 
@@ -90,7 +92,7 @@ export const AdminApi = {
       uid
     };
 
-    const res = await fetch(CONFIG.GAS_ADMIN_GATEWAY_URL, {
+    const res = await fetch(gasUrl, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)

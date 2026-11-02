@@ -9,8 +9,8 @@ import * as THREE from "three";
 export const WorldCamera = {
   camera: null,
   mode: "thirdPerson", // 'thirdPerson' | 'isometric'
-  offsetThirdPerson: new THREE.Vector3(0, 10, 14),
-  offsetIsometric: new THREE.Vector3(0, 26, 26),
+  offsetThirdPerson: new THREE.Vector3(0, 12, 16),
+  offsetIsometric: new THREE.Vector3(0, 38, 38),
   targetLookAt: new THREE.Vector3(),
   currentLookAt: new THREE.Vector3(),
 

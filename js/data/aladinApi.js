@@ -43,7 +43,8 @@ export const AladinApi = {
   async search(query, start = 1, maxResults = 10) {
     if (!query || !query.trim()) return { success: true, items: [] };
 
-    if (!CONFIG.GAS_ALADIN_URL) {
+    const gasUrl = CONFIG.GAS_API_URL || CONFIG.GAS_ALADIN_URL;
+    if (!gasUrl) {
       // 데모 모드: 검색어 매칭
       const matched = DEMO_BOOKS.filter(b => 
         b.title.includes(query) || b.author.includes(query) || b.publisher.includes(query)
@@ -52,7 +53,7 @@ export const AladinApi = {
     }
 
     try {
-      const url = `${CONFIG.GAS_ALADIN_URL}?action=search&query=${encodeURIComponent(query)}&start=${start}&maxResults=${maxResults}`;
+      const url = `${gasUrl}?action=search&query=${encodeURIComponent(query)}&start=${start}&maxResults=${maxResults}`;
       const res = await fetch(url);
       return await res.json();
     } catch (err) {
@@ -64,13 +65,14 @@ export const AladinApi = {
   async lookup(isbn) {
     if (!isbn) return { success: false, message: "ISBN이 필요합니다." };
 
-    if (!CONFIG.GAS_ALADIN_URL) {
+    const gasUrl = CONFIG.GAS_API_URL || CONFIG.GAS_ALADIN_URL;
+    if (!gasUrl) {
       const found = DEMO_BOOKS.find(b => b.isbn === isbn);
       return found ? { success: true, book: found } : { success: false, message: "도서를 찾을 수 없습니다." };
     }
 
     try {
-      const url = `${CONFIG.GAS_ALADIN_URL}?action=lookup&isbn=${encodeURIComponent(isbn)}`;
+      const url = `${gasUrl}?action=lookup&isbn=${encodeURIComponent(isbn)}`;
       const res = await fetch(url);
       return await res.json();
     } catch (err) {

@@ -100,6 +100,15 @@ export const Controls = {
   },
 
   getMoveVector(currentPos) {
+    // 모달창이 열려있거나 입력창에 포커스가 있을 때는 이동 차단
+    if (window.BuildingModal && window.BuildingModal.isOpen) {
+      return { x: 0, z: 0 };
+    }
+    const activeTag = document.activeElement ? document.activeElement.tagName : "";
+    if (activeTag === "INPUT" || activeTag === "TEXTAREA") {
+      return { x: 0, z: 0 };
+    }
+
     let moveX = 0;
     let moveZ = 0;
 

@@ -10,6 +10,7 @@ import { Player } from "./player.js";
 import { Controls } from "./controls.js";
 import { WorldCamera } from "./camera.js";
 import { Interactions } from "./interactions.js";
+import { BuildingModal } from "./buildingModal.js";
 import { AuthService } from "../auth/authService.js";
 import { Repository } from "../data/repository.js";
 import { MockRepo } from "../data/mockRepo.js";
@@ -79,28 +80,8 @@ export const Main3D = {
   },
 
   handleBuildingEnter(buildingId) {
-    if (buildingId === "library") {
-      // 도서관: 새 책 검색 및 완독 등록 모달 오픈
-      if (window.Modal) {
-        window.Modal.openBookSearch("feed");
-      }
-    } else if (buildingId === "postOffice") {
-      window.App.switchTab("relay");
-    } else if (buildingId === "feed") {
-      window.App.switchTab("feed");
-    } else if (buildingId === "broadcast") {
-      window.App.switchTab("interview");
-    } else if (buildingId === "blindForest") {
-      window.App.switchTab("blind");
-    } else if (buildingId === "myLibrary") {
-      window.App.switchTab("myroom");
-    } else if (buildingId === "admin") {
-      if (AuthService.isTeacher()) {
-        window.App.switchTab("admin");
-      } else {
-        alert("🔒 교무실은 선생님 전용 공간입니다.");
-      }
-    }
+    // 3D 뷰 위에서 전용 오버레이 모달 오픈!
+    BuildingModal.open(buildingId);
   },
 
   async refreshClassTree() {

@@ -125,6 +125,9 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <button id="btn-character-custom" onclick="window.CharacterCustomizer && window.CharacterCustomizer.openModal()" class="px-3 py-1.5 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm active:scale-95">
+            <span>🎨</span> 캐릭터 꾸미기
+          </button>
           <button id="btn-cam-view" onclick="Main3D.toggleCameraView()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
             📷 3인칭 뷰
           </button>
@@ -613,10 +616,15 @@
   <!-- 3D Three.js Main Controller -->
   <script type="module">
     import { Main3D } from "./js/world/main3d.js";
+    import { CharacterCustomizer } from "./js/world/characterCustomizer.js";
+    import { BuildingModal } from "./js/world/buildingModal.js";
     import { CsvParser } from "./js/admin/csvParser.js";
     import { Validator } from "./js/admin/validator.js";
     import { AdminApi } from "./js/admin/adminApi.js";
 
+    window.Main3D = Main3D;
+    window.CharacterCustomizer = CharacterCustomizer;
+    window.BuildingModal = BuildingModal;
     window.CsvParser = CsvParser;
     window.Validator = Validator;
     window.AdminApi = AdminApi;
@@ -624,6 +632,7 @@
     // 초기 3D 월드 자동 시작
     window.addEventListener("DOMContentLoaded", () => {
       Main3D.init();
+      CharacterCustomizer.init();
     });
   </script>
 </body>
