@@ -11,6 +11,16 @@
   <!-- App Stylesheets -->
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/isometric.css" />
+
+  <!-- Three.js Import Map (무빌드 모듈 로딩) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/"
+    }
+  }
+  </script>
 </head>
 <body class="bg-[#f0f9f3] text-gray-800 antialiased selection:bg-emerald-200">
 
@@ -101,19 +111,56 @@
   <!-- ========================================== -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    <!-- 2.1 Tab Panel: Village Hub (2.5D Isometric) -->
+    <!-- 2.1 Tab Panel: Village Hub (3D Three.js & 2D Fallback) -->
     <section id="panel-village" class="tab-panel space-y-4">
-      <!-- Live Ticker -->
-      <div id="village-news-ticker" class="bg-white/90 backdrop-blur-sm border border-emerald-100 px-4 py-2.5 rounded-2xl shadow-sm flex items-center justify-between">
-        <span class="text-xs text-gray-500">✨ 책마을에 오신 것을 환영합니다!</span>
+      <!-- 3D 컨트롤 & 뷰 모드 툴바 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-white/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-emerald-100 shadow-sm">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+            🎮 3D 동물의 숲 마을
+          </span>
+          <span class="hidden sm:inline text-xs text-gray-500">
+            조작: <b>WASD / 방향키 / 클릭 이동</b> (건물 앞 <b>E 키</b>로 입장)
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="btn-cam-view" onclick="Main3D.toggleCameraView()" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold transition flex items-center gap-1">
+            📷 3인칭 뷰
+          </button>
+          <button id="btn-mode-toggle" onclick="Main3D.toggleMode()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+            🗺️ 2D 모드로 전환
+          </button>
+        </div>
       </div>
 
-      <!-- 2.5D Animal Crossing Style Village Map Container -->
-      <div class="village-container shadow-2xl relative">
-        <div class="ac-grass-texture"></div>
-        
-        <!-- Landmarks & Elements will be injected here -->
-        <div id="village-map-container" class="absolute inset-0"></div>
+      <!-- 3D Three.js 월드 캔버스 컨테이너 -->
+      <div id="canvas-wrap" class="relative w-full h-[620px] rounded-3xl overflow-hidden shadow-2xl border-4 border-emerald-300/40 bg-gradient-to-b from-sky-300 to-emerald-200">
+        <div id="canvas-container" class="w-full h-full cursor-pointer"></div>
+
+        <!-- 모바일 가상 조이스틱 터치 존 -->
+        <div id="virtual-joystick-zone" class="absolute bottom-6 left-6 w-28 h-28 rounded-full bg-black/25 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center touch-none select-none sm:hidden z-30">
+          <div id="virtual-joystick-knob" class="w-12 h-12 rounded-full bg-white/80 shadow-lg pointer-events-none transition-transform duration-75"></div>
+        </div>
+
+        <!-- 3D 맵 오버레이 힌트 배지 -->
+        <div class="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-2xl text-[11px] font-bold text-gray-700 shadow border border-gray-100 hidden sm:flex items-center gap-2">
+          <span>🌳 중앙 독서나무 | 📚 도서관 | 📮 우체국 | 💬 광장 | 🎙️ 방송국 | 🔮 비밀의숲</span>
+        </div>
+      </div>
+
+      <!-- 2.5D Fallback Container (토글 시 표시) -->
+      <div id="village-2d-container" class="hidden">
+        <!-- Live Ticker -->
+        <div id="village-news-ticker" class="bg-white/90 backdrop-blur-sm border border-emerald-100 px-4 py-2.5 rounded-2xl shadow-sm flex items-center justify-between mb-4">
+          <span class="text-xs text-gray-500">✨ 책마을에 오신 것을 환영합니다! (2D 모드)</span>
+        </div>
+
+        <!-- 2.5D Animal Crossing Style Village Map Container -->
+        <div class="village-container shadow-2xl relative">
+          <div class="ac-grass-texture"></div>
+          <div id="village-map-container" class="absolute inset-0"></div>
+        </div>
       </div>
 
       <!-- Quick Action Bar -->
@@ -460,25 +507,70 @@
     </div>
   </div>
 
-  <!-- 3.6 Batch Register Students Modal -->
+  <!-- 3.6 Batch Register Students Modal (CSV 일괄 계정 생성) -->
   <div id="modal-batch-register" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-    <div class="village-card bg-white w-full max-w-md p-6 space-y-4">
+    <div class="village-card bg-white w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center">
-        <h3 class="font-black text-sm text-gray-900 flex items-center gap-2">
-          <span>👥</span> 학생 명단 일괄 등록
+        <h3 class="font-black text-base text-gray-900 flex items-center gap-2">
+          <span>👥</span> 학생 일괄 계정 생성 (CSV 업로드)
         </h3>
         <button onclick="Modal.closeModal('modal-batch-register')" class="text-gray-400 hover:text-gray-600">✕</button>
       </div>
 
-      <p class="text-xs text-gray-500">
-        한 줄에 한 명씩 학생 번호와 이름을 적어주세요. (초기 비밀번호: 1234 자동 발급)
-      </p>
+      <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h4 class="text-xs font-bold text-purple-900">1. 공식 CSV 템플릿 다운로드</h4>
+          <p class="text-[11px] text-purple-600 mt-0.5">엑셀에서 바로 열리는 UTF-8 BOM 양식 (학년, 반, 번호, 이름, 닉네임, 아이디)</p>
+        </div>
+        <button onclick="Admin.downloadCsvTemplate()" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm whitespace-nowrap">
+          📥 양식 다운로드 (.csv)
+        </button>
+      </div>
 
-      <textarea id="batch-students-input" rows="6" class="w-full px-3 py-2 border rounded-xl text-xs font-mono focus:ring-2 focus:ring-purple-400 outline-none" placeholder="1 김하늘&#10;2 이바다&#10;3 박우주"></textarea>
+      <!-- CSV 파일 드롭존 / 선택 -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-gray-700">2. 작성한 CSV 파일 업로드</label>
+        <input type="file" id="csv-file-input" accept=".csv" onchange="Admin.handleCsvFileSelect(event)" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer" />
+      </div>
 
-      <button onclick="Admin.handleBatchSubmit()" class="w-full py-2.5 bg-purple-700 text-white rounded-xl text-xs font-bold village-btn">
-        학생 명단 일괄 등록하기
-      </button>
+      <!-- CSV 미리보기 및 유효성 검사 결과 -->
+      <div id="csv-preview-area" class="hidden space-y-2 border-t pt-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-bold text-gray-700">📋 업로드 데이터 미리보기</span>
+          <span id="csv-preview-summary" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="max-h-48 overflow-y-auto border rounded-xl text-xs">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-100 sticky top-0 text-[11px] text-gray-600">
+              <tr>
+                <th class="p-2 border-b">행</th>
+                <th class="p-2 border-b">학년/반/번호</th>
+                <th class="p-2 border-b">이름</th>
+                <th class="p-2 border-b">아이디</th>
+                <th class="p-2 border-b">검증 상태</th>
+              </tr>
+            </thead>
+            <tbody id="csv-preview-tbody" class="divide-y text-[11px]"></tbody>
+          </table>
+        </div>
+
+        <!-- 진행률 바 -->
+        <div id="csv-progress-container" class="hidden space-y-1 pt-2">
+          <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+            <div id="csv-progress-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="csv-progress-text" class="text-right text-[10px] text-gray-500">0% 처리 중...</p>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button id="btn-execute-bulk" onclick="Admin.executeBulkCreate()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold village-btn shadow-md">
+            🚀 일괄 계정 생성 실행하기
+          </button>
+          <button id="btn-download-results" onclick="Admin.downloadResultsCsv()" class="hidden px-4 py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold village-btn shadow-md">
+            📥 발급 결과 CSV 다운로드
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -507,7 +599,7 @@
   <!-- ========================================== -->
   <!-- 4. App Script Inclusions                   -->
   <!-- ========================================== -->
-  <script src="js/config.js"></script>
+  <script type="module" src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script src="js/village.js"></script>
@@ -518,5 +610,21 @@
   <script src="js/myroom.js"></script>
   <script src="js/admin.js"></script>
   <script src="js/app.js"></script>
+  <!-- 3D Three.js Main Controller -->
+  <script type="module">
+    import { Main3D } from "./js/world/main3d.js";
+    import { CsvParser } from "./js/admin/csvParser.js";
+    import { Validator } from "./js/admin/validator.js";
+    import { AdminApi } from "./js/admin/adminApi.js";
+
+    window.CsvParser = CsvParser;
+    window.Validator = Validator;
+    window.AdminApi = AdminApi;
+
+    // 초기 3D 월드 자동 시작
+    window.addEventListener("DOMContentLoaded", () => {
+      Main3D.init();
+    });
+  </script>
 </body>
 </html>

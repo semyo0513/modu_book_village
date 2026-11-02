@@ -118,6 +118,122 @@ const Admin = {
     }
   },
 
+  // 1. CSV 양식 다운로드
+  downloadCsvTemplate() {
+    if (window.CsvParser) {
+      window.CsvParser.downloadTemplate();
+    } else {
+      alert("CSV 파서 모듈이 아직 로드되지 않았습니다.");
+    }
+  },
+
+  // 2. CSV 파일 업로드 & 검증
+  parsedCsvRows: [],
+  lastBatchResults: [],
+
+  async handleCsvFileSelect(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    try {
+      const rows = await window.CsvParser.parseFile(file);
+      if (!rows || rows.length === 0) {
+        alert("CSV 파일에서 읽을 수 있는 데이터가 없습니다.");
+        return;
+      }
+
+      const validated = window.Validator.validateRows(rows);
+      this.parsedCsvRows = validated;
+      this.renderCsvPreview(validated);
+    } catch (err) {
+      console.error("CSV 파싱 실패:", err);
+      alert("CSV 파일 파싱 중 오류가 발생했습니다: " + err.message);
+    }
+  },
+
+  renderCsvPreview(rows) {
+    const previewArea = document.getElementById("csv-preview-area");
+    const summarySpan = document.getElementById("csv-preview-summary");
+    const tbody = document.getElementById("csv-preview-tbody");
+    if (!previewArea || !tbody) return;
+
+    previewArea.classList.remove("hidden");
+    const validCount = rows.filter(r => r.isValid).length;
+    summarySpan.innerHTML = `총 <b>${rows.length}</b>명 (정상: <span class="text-emerald-600 font-bold">${validCount}</span>, 오류: <span class="text-rose-600 font-bold">${rows.length - validCount}</span>)`;
+
+    tbody.innerHTML = rows.map((r) => `
+      <tr class="${r.isValid ? 'hover:bg-emerald-50/50' : 'bg-rose-50 text-rose-800'}">
+        <td class="p-2 border-b">${r._line}</td>
+        <td class="p-2 border-b font-medium">${r.grade}학년 ${r.classNo}반 ${r.number}번</td>
+        <td class="p-2 border-b font-bold">${r.name}</td>
+        <td class="p-2 border-b font-mono text-gray-600">${r.computedLoginId}</td>
+        <td class="p-2 border-b">
+          ${r.isValid 
+            ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">정상</span>' 
+            : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-200 text-rose-900" title="${r.errors.join(', ')}">${r.errors[0]}</span>`}
+        </td>
+      </tr>
+    `).join("");
+
+    const btnExec = document.getElementById("btn-execute-bulk");
+    if (btnExec) {
+      btnExec.disabled = validCount === 0;
+      btnExec.textContent = `🚀 정상 ${validCount}명 일괄 계정 생성 실행하기`;
+    }
+  },
+
+  // 3. 일괄 생성 실행
+  async executeBulkCreate() {
+    const validRows = (this.parsedCsvRows || []).filter(r => r.isValid);
+    if (validRows.length === 0) {
+      alert("생성 가능한 정상 데이터가 없습니다.");
+      return;
+    }
+
+    if (!confirm(`총 ${validRows.length}명의 학생 계정을 생성하시겠습니까?`)) {
+      return;
+    }
+
+    const progressContainer = document.getElementById("csv-progress-container");
+    const progressBar = document.getElementById("csv-progress-bar");
+    const progressText = document.getElementById("csv-progress-text");
+    const btnExec = document.getElementById("btn-execute-bulk");
+    const btnDownload = document.getElementById("btn-download-results");
+
+    if (progressContainer) progressContainer.classList.remove("hidden");
+    if (btnExec) btnExec.disabled = true;
+
+    try {
+      const res = await window.AdminApi.bulkCreate(validRows, (current, total) => {
+        const pct = Math.round((current / total) * 100);
+        if (progressBar) progressBar.style.width = pct + "%";
+        if (progressText) progressText.textContent = `${pct}% 처리 완료 (${current}/${total}명)`;
+      });
+
+      if (res.success) {
+        this.lastBatchResults = res.results;
+        alert(`🎉 일괄 계정 생성 완료! (성공: ${res.successCount}명)`);
+        if (btnDownload) btnDownload.classList.remove("hidden");
+        this.loadClassStats();
+      } else {
+        alert("오류 발생: " + res.message);
+      }
+    } catch (err) {
+      alert("실행 실패: " + err.message);
+    } finally {
+      if (btnExec) btnExec.disabled = false;
+    }
+  },
+
+  // 4. 발급 결과 CSV 다운로드
+  downloadResultsCsv() {
+    if (this.lastBatchResults && this.lastBatchResults.length > 0) {
+      window.CsvParser.downloadResults(this.lastBatchResults);
+    } else {
+      alert("다운로드할 결과 데이터가 없습니다.");
+    }
+  },
+
   openSystemSettingsModal() {
     const modal = document.getElementById("modal-system-settings");
     if (modal) {
