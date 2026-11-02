@@ -5,7 +5,7 @@
  * - Mock 모드 자동 지원
  */
 
-import { CONFIG } from "../config.js";
+const CONFIG = window.CONFIG || {};
 
 export const AuthService = {
   currentUser: null,

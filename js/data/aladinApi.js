@@ -4,7 +4,7 @@
  * - 엔드포인트 미설정 시 데모 도서 데이터 제공
  */
 
-import { CONFIG } from "../config.js";
+const CONFIG = window.CONFIG || {};
 
 const DEMO_BOOKS = [
   {

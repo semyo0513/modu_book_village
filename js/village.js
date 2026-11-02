@@ -490,3 +490,5 @@ const Village = {
     }
   }
 };
+
+window.Village = Village;

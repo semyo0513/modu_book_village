@@ -602,7 +602,7 @@
   <!-- ========================================== -->
   <!-- 4. App Script Inclusions                   -->
   <!-- ========================================== -->
-  <script type="module" src="js/config.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/api.js"></script>
   <script src="js/village.js"></script>
@@ -615,25 +615,59 @@
   <script src="js/app.js"></script>
   <!-- 3D Three.js Main Controller -->
   <script type="module">
-    import { Main3D } from "./js/world/main3d.js";
-    import { CharacterCustomizer } from "./js/world/characterCustomizer.js";
-    import { BuildingModal } from "./js/world/buildingModal.js";
-    import { CsvParser } from "./js/admin/csvParser.js";
-    import { Validator } from "./js/admin/validator.js";
-    import { AdminApi } from "./js/admin/adminApi.js";
+    try {
+      const { Main3D } = await import("./js/world/main3d.js");
+      const { CharacterCustomizer } = await import("./js/world/characterCustomizer.js");
+      const { BuildingModal } = await import("./js/world/buildingModal.js");
+      const { CsvParser } = await import("./js/admin/csvParser.js");
+      const { Validator } = await import("./js/admin/validator.js");
+      const { AdminApi } = await import("./js/admin/adminApi.js");
 
-    window.Main3D = Main3D;
-    window.CharacterCustomizer = CharacterCustomizer;
-    window.BuildingModal = BuildingModal;
-    window.CsvParser = CsvParser;
-    window.Validator = Validator;
-    window.AdminApi = AdminApi;
+      window.Main3D = Main3D;
+      window.CharacterCustomizer = CharacterCustomizer;
+      window.BuildingModal = BuildingModal;
+      window.CsvParser = CsvParser;
+      window.Validator = Validator;
+      window.AdminApi = AdminApi;
 
-    // 초기 3D 월드 자동 시작
-    window.addEventListener("DOMContentLoaded", () => {
-      Main3D.init();
+      // 3D 월드 초기화
+      await Main3D.init();
       CharacterCustomizer.init();
-    });
+    } catch (e) {
+      console.warn("3D 모듈 로드 실패 (2D 모드로 폴백):", e);
+      // 2D 폴백 컨테이너 강제 표시
+      const canvasWrap = document.getElementById("canvas-wrap");
+      const village2D = document.getElementById("village-2d-container");
+      const toggleBtn = document.getElementById("btn-mode-toggle");
+      if (canvasWrap) canvasWrap.classList.add("hidden");
+      if (village2D) village2D.classList.remove("hidden");
+      if (toggleBtn) toggleBtn.innerHTML = "🎮 3D 게임 모드로 전환";
+      if (window.Village && typeof window.Village.init === "function") {
+        window.Village.init();
+      }
+    }
+  </script>
+
+  <!-- Fallback Safety Watcher: 모듈 스크립트가 완전히 차단된 로컬 file:/// 환경 대응 -->
+  <script>
+    setTimeout(function() {
+      if (!window.Main3D || !window.Main3D.isInitialized) {
+        var canvasContainer = document.getElementById("canvas-container");
+        var hasCanvas = canvasContainer && canvasContainer.querySelector("canvas");
+        if (!hasCanvas) {
+          console.warn("3D 캔버스가 감지되지 않아 2D 모드로 자동 전환합니다.");
+          var canvasWrap = document.getElementById("canvas-wrap");
+          var village2D = document.getElementById("village-2d-container");
+          var toggleBtn = document.getElementById("btn-mode-toggle");
+          if (canvasWrap) canvasWrap.classList.add("hidden");
+          if (village2D) village2D.classList.remove("hidden");
+          if (toggleBtn) toggleBtn.innerHTML = "🎮 3D 게임 모드로 전환";
+          if (window.Village && typeof window.Village.init === "function") {
+            window.Village.init();
+          }
+        }
+      }
+    }, 1200);
   </script>
 </body>
 </html>

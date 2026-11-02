@@ -4,7 +4,7 @@
  * - 읽기 절감 최적화: 필요한 컬렉션만 쿼리, 인덱스 활용, 페이지네이션 지원
  */
 
-import { CONFIG } from "../config.js";
+const CONFIG = window.CONFIG || {};
 
 let db = null;
 let auth = null;

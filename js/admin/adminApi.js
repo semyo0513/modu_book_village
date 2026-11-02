@@ -4,7 +4,7 @@
  * - Firebase ID 토큰 첨부 및 프리플라이트 방지 (text/plain 전송)
  */
 
-import { CONFIG } from "../config.js";
+const CONFIG = window.CONFIG || {};
 import { AuthService } from "../auth/authService.js";
 
 export const AdminApi = {

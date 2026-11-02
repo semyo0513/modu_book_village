@@ -353,6 +353,9 @@ const Modal = {
   }
 };
 
+window.App = App;
+window.Modal = Modal;
+
 // DOM 로드 완료 후 앱 초기화
 document.addEventListener("DOMContentLoaded", () => {
   App.init();

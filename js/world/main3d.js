@@ -22,61 +22,66 @@ export const Main3D = {
   is3DMode: true,
 
   async init() {
-    // 1. Data Repository 초기화
-    if (!Repository.instance) {
-      const fbSuccess = await FirebaseRepo.init();
-      if (fbSuccess) {
-        Repository.setImplementation(FirebaseRepo);
-      } else {
-        Repository.setImplementation(MockRepo);
+    try {
+      // 1. Data Repository 초기화
+      if (!Repository.instance) {
+        const fbSuccess = await FirebaseRepo.init();
+        if (fbSuccess) {
+          Repository.setImplementation(FirebaseRepo);
+        } else {
+          Repository.setImplementation(MockRepo);
+        }
       }
-    }
 
-    // 2. Three.js Engine 시작
-    const success = Engine.init("canvas-container");
-    if (!success) {
+      // 2. Three.js Engine 시작
+      const success = Engine.init("canvas-container");
+      if (!success) {
+        this.switchTo2D();
+        return;
+      }
+
+      // 3. 3D 마을 및 지형 구축
+      VillageWorld.build(Engine.scene);
+
+      // 4. 플레이어 아바타 생성
+      AuthService.init();
+      const userName = (AuthService.currentUser && AuthService.currentUser.name) || "책친구";
+      Player.create(Engine.scene, userName);
+
+      // 사용자 변경 시 네임태그 갱신
+      AuthService.onChange((user) => {
+        if (Player.mesh) {
+          Player.updateNameTag(user ? (user.nickname || user.name) : "책친구");
+        }
+      });
+
+      // 5. 카메라 및 조작 컨트롤러 초기화
+      WorldCamera.init(Engine.camera);
+      Controls.init(Engine.renderer.domElement, Engine.camera);
+
+      // 6. 건물 상호작용 리스너 (건물 진입 시 기존 탭/모달 패널 오픈)
+      Interactions.init((buildingId) => {
+        this.handleBuildingEnter(buildingId);
+      });
+
+      // 7. 엔진 틱 루프 등록
+      Engine.onUpdate((delta) => {
+        const moveVec = Controls.getMoveVector(Player.position);
+        Player.move(moveVec.x, moveVec.z, delta, VillageWorld.colliders);
+        WorldCamera.update(Player.position, delta);
+        VillageWorld.update(delta);
+        Interactions.update(Player.position, VillageWorld.interactables);
+      });
+
+      // 8. 학급 나무 상태 동기화
+      this.refreshClassTree();
+
+      this.isInitialized = true;
+      console.log("🌲 책마을 3D 게임 월드 로드 완료!");
+    } catch (err) {
+      console.error("3D 월드 초기화 중 오류 발생 (2D 폴백 실행):", err);
       this.switchTo2D();
-      return;
     }
-
-    // 3. 3D 마을 및 지형 구축
-    VillageWorld.build(Engine.scene);
-
-    // 4. 플레이어 아바타 생성
-    AuthService.init();
-    const userName = (AuthService.currentUser && AuthService.currentUser.name) || "책친구";
-    Player.create(Engine.scene, userName);
-
-    // 사용자 변경 시 네임태그 갱신
-    AuthService.onChange((user) => {
-      if (Player.mesh) {
-        Player.updateNameTag(user ? (user.nickname || user.name) : "책친구");
-      }
-    });
-
-    // 5. 카메라 및 조작 컨트롤러 초기화
-    WorldCamera.init(Engine.camera);
-    Controls.init(Engine.renderer.domElement, Engine.camera);
-
-    // 6. 건물 상호작용 리스너 (건물 진입 시 기존 탭/모달 패널 오픈)
-    Interactions.init((buildingId) => {
-      this.handleBuildingEnter(buildingId);
-    });
-
-    // 7. 엔진 틱 루프 등록
-    Engine.onUpdate((delta) => {
-      const moveVec = Controls.getMoveVector(Player.position);
-      Player.move(moveVec.x, moveVec.z, delta, VillageWorld.colliders);
-      WorldCamera.update(Player.position, delta);
-      VillageWorld.update(delta);
-      Interactions.update(Player.position, VillageWorld.interactables);
-    });
-
-    // 8. 학급 나무 상태 동기화
-    this.refreshClassTree();
-
-    this.isInitialized = true;
-    console.log("🌲 책마을 3D 게임 월드 로드 완료!");
   },
 
   handleBuildingEnter(buildingId) {
@@ -123,7 +128,10 @@ export const Main3D = {
     if (canvasWrap) canvasWrap.classList.add("hidden");
     if (village2D) village2D.classList.remove("hidden");
     if (toggleBtn) toggleBtn.innerHTML = "🎮 3D 게임 모드로 전환";
-    Engine.stop();
+    if (typeof Engine !== "undefined" && Engine.stop) Engine.stop();
+    if (window.Village && typeof window.Village.init === "function") {
+      window.Village.init();
+    }
   },
 
   switchTo3D() {
