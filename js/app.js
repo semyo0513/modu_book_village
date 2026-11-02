@@ -111,36 +111,136 @@ const Modal = {
     if (modal) {
       modal.classList.remove("hidden");
       modal.classList.add("flex");
-      document.getElementById("book-search-input").focus();
+      this.switchBookTab("search");
+      // 최초 오픈 시 검색어가 비어있으면 기본 추천도서 렌더링
+      const searchInput = document.getElementById("book-search-input");
+      if (searchInput && !searchInput.value.trim()) {
+        this.handleBookSearch();
+      }
     }
+  },
+
+  currentManualTheme: "emerald",
+
+  switchBookTab(tab) {
+    const searchTab = document.getElementById("book-tab-search");
+    const manualTab = document.getElementById("book-tab-manual");
+    const btnSearch = document.getElementById("book-tab-btn-search");
+    const btnManual = document.getElementById("book-tab-btn-manual");
+
+    if (tab === "manual") {
+      if (searchTab) searchTab.classList.add("hidden");
+      if (manualTab) manualTab.classList.remove("hidden");
+      if (btnSearch) {
+        btnSearch.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-800 transition flex items-center justify-center gap-1.5";
+      }
+      if (btnManual) {
+        btnManual.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-emerald-700 transition flex items-center justify-center gap-1.5";
+      }
+      this.updateManualCoverPreview();
+      const titleInput = document.getElementById("manual-book-title");
+      if (titleInput) titleInput.focus();
+    } else {
+      if (manualTab) manualTab.classList.add("hidden");
+      if (searchTab) searchTab.classList.remove("hidden");
+      if (btnSearch) {
+        btnSearch.className = "flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-emerald-700 transition flex items-center justify-center gap-1.5";
+      }
+      if (btnManual) {
+        btnManual.className = "flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-800 transition flex items-center justify-center gap-1.5";
+      }
+      const searchInput = document.getElementById("book-search-input");
+      if (searchInput) searchInput.focus();
+    }
+  },
+
+  selectManualTheme(theme) {
+    this.currentManualTheme = theme;
+    const picker = document.getElementById("manual-theme-picker");
+    if (picker) {
+      const buttons = picker.querySelectorAll("button");
+      buttons.forEach(btn => {
+        if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(`'${theme}'`)) {
+          btn.classList.add("ring-2", "ring-offset-1", "ring-emerald-500");
+        } else {
+          btn.classList.remove("ring-2", "ring-offset-1", "ring-emerald-500");
+        }
+      });
+    }
+    this.updateManualCoverPreview();
+  },
+
+  updateManualCoverPreview() {
+    const title = (document.getElementById("manual-book-title")?.value || "").trim() || "도서 제목";
+    const author = (document.getElementById("manual-book-author")?.value || "").trim();
+    const coverUrlInput = (document.getElementById("manual-book-cover-url")?.value || "").trim();
+    const preview = document.getElementById("manual-cover-preview");
+    if (!preview) return;
+
+    if (coverUrlInput) {
+      preview.src = coverUrlInput;
+    } else if (window.API && window.API.generateDefaultCoverSvg) {
+      preview.src = window.API.generateDefaultCoverSvg(title, author, this.currentManualTheme);
+    }
+  },
+
+  submitManualBook() {
+    const title = (document.getElementById("manual-book-title")?.value || "").trim();
+    if (!title) {
+      alert("책 제목을 입력해주세요!");
+      document.getElementById("manual-book-title")?.focus();
+      return;
+    }
+    const author = (document.getElementById("manual-book-author")?.value || "").trim() || "저자 미상";
+    const publisher = (document.getElementById("manual-book-publisher")?.value || "").trim() || "출판사 미상";
+    const coverUrlInput = (document.getElementById("manual-book-cover-url")?.value || "").trim();
+    const coverUrl = coverUrlInput || (window.API && window.API.generateDefaultCoverSvg ? window.API.generateDefaultCoverSvg(title, author, this.currentManualTheme) : "");
+
+    const customBook = {
+      isbn: "CUSTOM-" + Date.now().toString(36),
+      title: title,
+      author: author,
+      publisher: publisher,
+      coverUrl: coverUrl,
+      category: "직접 등록 도서",
+      rating: "9.5",
+      isCustom: true
+    };
+
+    this.selectBook(customBook);
   },
 
   async handleBookSearch() {
     const query = document.getElementById("book-search-input").value.trim();
-    if (!query) {
-      alert("검색어를 입력해주세요.");
-      return;
-    }
-
     const resultsContainer = document.getElementById("book-search-results");
-    resultsContainer.innerHTML = `<div class="p-6 text-center text-gray-500">알라딘 도서 정보를 검색 중... 🔍</div>`;
+    resultsContainer.innerHTML = `<div class="p-8 text-center text-emerald-600 font-bold animate-pulse text-xs">도서 정보를 탐색 중입니다... 🔍</div>`;
 
-    const res = await API.request("searchAladin", { query: query });
+    const res = await API.request("searchBooks", { query: query });
     if (res.success) {
       const items = res.items || [];
       if (items.length === 0) {
-        resultsContainer.innerHTML = `<div class="p-6 text-center text-gray-500">검색 결과가 없습니다. 다른 검색어로 시도해보세요.</div>`;
+        resultsContainer.innerHTML = `
+          <div class="p-8 text-center text-gray-500 space-y-3">
+            <p class="text-xs">"${query}"에 대한 검색 결과가 없습니다.</p>
+            <button onclick="Modal.switchBookTab('manual')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold village-btn shadow">
+              ✏️ 이 책 직접 입력하여 등록하기
+            </button>
+          </div>
+        `;
         return;
       }
 
       resultsContainer.innerHTML = items.map(item => `
         <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-emerald-50/50 hover:border-emerald-200 transition-all cursor-pointer" onclick='Modal.selectBook(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
           <div class="flex items-center gap-3">
-            <img src="${item.coverUrl}" class="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/80x110'" />
+            <img src="${item.coverUrl}" class="w-12 h-16 object-cover rounded shadow-sm flex-shrink-0" onerror="this.src='${API.generateDefaultCoverSvg ? API.generateDefaultCoverSvg(item.title, item.author) : ''}'" />
             <div class="overflow-hidden">
               <h5 class="font-bold text-xs text-gray-900 line-clamp-1">${item.title}</h5>
               <p class="text-[11px] text-gray-500 truncate mt-0.5">${item.author} | ${item.publisher}</p>
-              <span class="badge-pill bg-gray-100 text-gray-600 text-[10px] mt-1">${item.category ? item.category.split('>')[0] : '도서'}</span>
+              <div class="flex items-center gap-1.5 mt-1">
+                <span class="badge-pill bg-gray-100 text-gray-600 text-[10px]">${item.category ? item.category.split('>')[0].trim() : '도서'}</span>
+                <span class="text-[10px] text-emerald-600 font-semibold">${item.source || '추천도서'}</span>
+              </div>
             </div>
           </div>
           <button class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold village-btn flex-shrink-0">
@@ -149,7 +249,14 @@ const Modal = {
         </div>
       `).join("");
     } else {
-      resultsContainer.innerHTML = `<div class="p-6 text-center text-red-500">${res.message}</div>`;
+      resultsContainer.innerHTML = `
+        <div class="p-6 text-center text-rose-500 space-y-2">
+          <p class="text-xs">${res.message || "검색 중 오류가 발생했습니다."}</p>
+          <button onclick="Modal.switchBookTab('manual')" class="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-bold">
+            ✏️ 직접 입력하기로 계속
+          </button>
+        </div>
+      `;
     }
   },
 

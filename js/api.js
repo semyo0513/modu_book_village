@@ -50,6 +50,66 @@ const MOCK_INITIAL_DATA = {
       category: "국내도서 > 소설/시/희곡 > 판타지소설",
       aladinRating: 9.2,
       description: "잠들어야만 입장할 수 있는 상점가에서 꿈을 파는 사람들과 손님들의 따스하고 몽환적인 이야기."
+    },
+    "9788936434267": {
+      isbn: "9788936434267",
+      title: "아몬드",
+      author: "손원평 (지은이)",
+      publisher: "창비",
+      coverUrl: "https://image.aladin.co.kr/product/16839/4/cover500/8936434268_2.jpg",
+      category: "국내도서 > 청소년 > 청소년 문학",
+      aladinRating: 9.6,
+      description: "괴물이라 불린 소년의 특별한 성장 이야기."
+    },
+    "9788949114002": {
+      isbn: "9788949114002",
+      title: "마당을 나온 암탉",
+      author: "황선미 (지은이)",
+      publisher: "사계절",
+      coverUrl: "https://image.aladin.co.kr/product/67/60/cover500/8949114008_1.jpg",
+      category: "국내도서 > 어린이 > 동화",
+      aladinRating: 9.8,
+      description: "양계장을 탈출해 꿈을 찾아 떠난 잎싹의 감동적인 모험."
+    },
+    "9788983711892": {
+      isbn: "9788983711892",
+      title: "시간을 파는 상점",
+      author: "김선영 (지은이)",
+      publisher: "자음과모음",
+      coverUrl: "https://image.aladin.co.kr/product/1628/77/cover500/8957076369_1.jpg",
+      category: "국내도서 > 청소년 > 청소년 문학",
+      aladinRating: 9.5,
+      description: "인터넷 카페에 시간을 파는 상점을 연 온조의 마법 같은 성장기."
+    },
+    "9788936433604": {
+      isbn: "9788936433604",
+      title: "몽실 언니",
+      author: "권정생 (지은이)",
+      publisher: "창비",
+      coverUrl: "https://image.aladin.co.kr/product/46/61/cover500/8936433601_1.jpg",
+      category: "국내도서 > 어린이 > 동화",
+      aladinRating: 9.7,
+      description: "모진 세월 속에서도 동생을 품에 안고 당당히 살아낸 몽실이의 이야기."
+    },
+    "9788998499259": {
+      isbn: "9788998499259",
+      title: "수상한 아파트",
+      author: "박현숙 (지은이)",
+      publisher: "북멘토",
+      coverUrl: "https://image.aladin.co.kr/product/1917/38/cover500/8998499256_1.jpg",
+      category: "국내도서 > 어린이 > 동화",
+      aladinRating: 9.4,
+      description: "여진이가 수상한 이웃들이 사는 503호 아파트에서 겪는 흥미진진한 추리 이야기."
+    },
+    "9788949162096": {
+      isbn: "9788949162096",
+      title: "푸른 사자 와니니",
+      author: "이현 (지은이)",
+      publisher: "창비",
+      coverUrl: "https://image.aladin.co.kr/product/6045/4/cover500/8936442805_1.jpg",
+      category: "국내도서 > 어린이 > 동화",
+      aladinRating: 9.8,
+      description: "아프리카 초원을 누비는 어린 암사자 와니니의 눈부신 성장 모험."
     }
   },
   records: [
@@ -184,7 +244,13 @@ function getMockStorage() {
     localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(MOCK_INITIAL_DATA));
     return MOCK_INITIAL_DATA;
   }
-  return JSON.parse(dataStr);
+  try {
+    const parsed = JSON.parse(dataStr);
+    parsed.books = { ...MOCK_INITIAL_DATA.books, ...(parsed.books || {}) };
+    return parsed;
+  } catch(e) {
+    return MOCK_INITIAL_DATA;
+  }
 }
 
 function saveMockStorage(data) {
@@ -195,8 +261,147 @@ function saveMockStorage(data) {
 // API 클라이언트 인터페이스
 // ==========================================
 const API = {
+  // 예쁜 기본 책 표지 SVG 생성기 (네트워크 없이 즉시 생성)
+  generateDefaultCoverSvg(title, author = "", theme = "emerald") {
+    const themes = {
+      emerald: { bg: "#065f46", bg2: "#047857", accent: "#34d399", text: "#ffffff", sub: "#a7f3d0" },
+      navy: { bg: "#1e1b4b", bg2: "#312e81", accent: "#818cf8", text: "#ffffff", sub: "#c7d2fe" },
+      pink: { bg: "#831843", bg2: "#9d174d", accent: "#f472b6", text: "#ffffff", sub: "#fbcfe8" },
+      sunset: { bg: "#7c2d12", bg2: "#9a3412", accent: "#fb923c", text: "#ffffff", sub: "#fed7aa" },
+      purple: { bg: "#581c87", bg2: "#6b21a8", accent: "#c084fc", text: "#ffffff", sub: "#e9d5ff" },
+      yellow: { bg: "#713f12", bg2: "#854d0e", accent: "#facc15", text: "#ffffff", sub: "#fef08a" }
+    };
+    const t = themes[theme] || themes.emerald;
+    const cleanTitle = (title || "도서").replace(/[<>&"]/g, "").slice(0, 24);
+    const cleanAuthor = (author || "").replace(/[<>&"]/g, "").slice(0, 16);
+    const line1 = cleanTitle.length > 10 ? cleanTitle.slice(0, 10) : cleanTitle;
+    const line2 = cleanTitle.length > 10 ? cleanTitle.slice(10, 22) : "";
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="280" viewBox="0 0 200 280">
+      <defs>
+        <linearGradient id="g_${theme}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${t.bg}"/>
+          <stop offset="100%" stop-color="${t.bg2}"/>
+        </linearGradient>
+      </defs>
+      <rect width="200" height="280" rx="8" fill="url(#g_${theme})"/>
+      <rect x="0" y="0" width="14" height="280" fill="rgba(0,0,0,0.2)"/>
+      <line x1="14" y1="0" x2="14" y2="280" stroke="${t.accent}" stroke-opacity="0.3" stroke-width="1.5"/>
+      <rect x="22" y="22" width="156" height="236" rx="4" fill="none" stroke="${t.accent}" stroke-opacity="0.4" stroke-width="1"/>
+      <circle cx="100" cy="72" r="24" fill="rgba(255,255,255,0.1)"/>
+      <text x="100" y="80" font-size="22" text-anchor="middle">📖</text>
+      <text x="100" y="132" fill="${t.text}" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">${line1}</text>
+      ${line2 ? `<text x="100" y="152" fill="${t.text}" font-family="sans-serif" font-size="12" font-weight="bold" text-anchor="middle">${line2}</text>` : ''}
+      <line x1="60" y1="180" x2="140" y2="180" stroke="${t.accent}" stroke-opacity="0.6" stroke-width="1"/>
+      <text x="100" y="206" fill="${t.sub}" font-family="sans-serif" font-size="11" text-anchor="middle">${cleanAuthor || '우리 반 책마을'}</text>
+    </svg>`;
+
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  },
+
+  // 기본 권장도서 목록
+  getPresetBooks() {
+    const db = getMockStorage();
+    return Object.values(db.books || {});
+  },
+
+  // Google Books API 직접 검색 (CORS 지원)
+  async searchGoogleBooks(query) {
+    const apiKey = (window.CONFIG && window.CONFIG.FIREBASE && window.CONFIG.FIREBASE.apiKey) || "";
+    const keyParam = (apiKey && !apiKey.includes("MOCK")) ? `&key=${apiKey}` : "";
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&country=KR&maxResults=10${keyParam}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Google Books API HTTP ${res.status}`);
+    }
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) return [];
+
+    return data.items.map(item => {
+      const info = item.volumeInfo || {};
+      const identifiers = info.industryIdentifiers || [];
+      const isbnObj = identifiers.find(id => id.type === "ISBN_13") || identifiers.find(id => id.type === "ISBN_10") || identifiers[0];
+      const isbn = isbnObj ? isbnObj.identifier : ("GB-" + item.id);
+      const authors = (info.authors || []).join(", ") || (info.publisher ? info.publisher : "저자 미상");
+      const cover = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || "")).replace(/^http:\/\//i, "https://");
+
+      return {
+        isbn: isbn,
+        title: info.title || "제목 없음",
+        author: authors,
+        publisher: info.publisher || "출판사 미상",
+        coverUrl: cover || this.generateDefaultCoverSvg(info.title, (info.authors || [])[0] || ""),
+        category: (info.categories && info.categories[0]) || "도서",
+        description: info.description || "",
+        rating: info.averageRating ? (info.averageRating * 2).toFixed(1) : "9.5",
+        source: "Google Books"
+      };
+    });
+  },
+
+  // 통합 도서 검색 (Google Books -> GAS 백엔드 -> 권장 프리셋 다중 폴백)
+  async searchBooks(query) {
+    const q = (query || "").trim();
+    if (!q) {
+      return { success: true, items: this.getPresetBooks(), totalResults: this.getPresetBooks().length, source: "Preset" };
+    }
+
+    // 1. Google Books API 시도
+    try {
+      const googleResults = await this.searchGoogleBooks(q);
+      if (googleResults && googleResults.length > 0) {
+        return { success: true, items: googleResults, totalResults: googleResults.length, source: "Google Books" };
+      }
+    } catch (err) {
+      console.warn("Google Books 검색 건너뜀 (대안 탐색):", err.message);
+    }
+
+    // 2. GAS 백엔드 프록시 (네이버/카카오 연동된 경우)
+    if (CONFIG.GAS_API_URL) {
+      try {
+        const res = await fetch(CONFIG.GAS_API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "searchBooks", payload: { query: q } })
+        });
+        const gasData = await res.json();
+        if (gasData.success && gasData.items && gasData.items.length > 0) {
+          return gasData;
+        }
+      } catch (err) {
+        console.warn("GAS 도서 검색 건너뜀:", err.message);
+      }
+    }
+
+    // 3. 권장도서 목록 중 제목/저자 매칭
+    const presets = this.getPresetBooks();
+    const matched = presets.filter(b => 
+      b.title.toLowerCase().includes(q.toLowerCase()) || 
+      b.author.toLowerCase().includes(q.toLowerCase()) ||
+      (b.publisher && b.publisher.toLowerCase().includes(q.toLowerCase()))
+    );
+
+    if (matched.length > 0) {
+      return { success: true, items: matched, totalResults: matched.length, source: "Preset" };
+    }
+
+    // 4. 결과 없음
+    return { 
+      success: true, 
+      items: [], 
+      totalResults: 0,
+      message: `"${q}"에 대한 검색 결과가 없습니다.` 
+    };
+  },
+
   // 공통 POST 요청
   async request(action, payload = {}) {
+    // 도서 검색 요청(searchAladin / searchBooks)은 전역 다중 엔진으로 일원화
+    if (action === "searchAladin" || action === "searchBooks") {
+      return this.searchBooks(payload.query);
+    }
+
     const token = Auth.getToken();
 
     // 1. Mock 모드일 때
@@ -205,6 +410,11 @@ const API = {
     }
 
     // 2. 실제 GAS 백엔드 요청
+    if (!CONFIG.GAS_API_URL) {
+      // GAS URL 미설정 시 로컬 Mock 핸들러로 폴백 처리
+      return this.handleMockRequest(action, payload, token);
+    }
+
     try {
       const response = await fetch(CONFIG.GAS_API_URL, {
         method: "POST",
@@ -214,8 +424,7 @@ const API = {
       return await response.json();
     } catch (err) {
       console.error("API 요청 실패:", err);
-      // 서버 장애 시 안내 및 fallback
-      return { success: false, message: "서버 통신 오류: " + err.message };
+      return this.handleMockRequest(action, payload, token);
     }
   },
 

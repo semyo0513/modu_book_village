@@ -136,15 +136,15 @@
             </button>
           </div>
           <div class="flex items-center justify-between p-3 bg-emerald-50 rounded-2xl border border-emerald-100 text-xs text-emerald-800">
-            <span>💡 원하는 책을 검색하여 클릭하면 바로 독서 감상평이나 완독 기록을 남길 수 있습니다!</span>
-            <button onclick="Modal.openBookSearch('feed')" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl font-bold shadow-sm hover:bg-emerald-700">
-              ✍️ 직접 등록창 열기
+            <span>💡 원하는 책을 검색하거나, 검색되지 않는 책은 직접 입력하여 기록을 남길 수 있습니다!</span>
+            <button onclick="BuildingModal.close(); Modal.openBookSearch('feed'); Modal.switchBookTab('manual');" class="px-3 py-1.5 bg-emerald-600 text-white rounded-xl font-bold shadow-sm hover:bg-emerald-700 whitespace-nowrap">
+              ✏️ 직접 입력하기
             </button>
           </div>
           <div id="bm-lib-results" class="space-y-3 min-h-[260px] max-h-[420px] overflow-y-auto pr-1">
             <div class="p-10 text-center text-gray-400">
               <span class="text-3xl block mb-2">📖</span>
-              검색어를 입력하시면 알라딘 Open API에서 실시간으로 도서 정보를 찾아옵니다.
+              도서 검색 또는 추천 목록을 불러오는 중입니다...
             </div>
           </div>
         </div>
@@ -156,23 +156,22 @@
 
       const doSearch = async () => {
         const q = searchInput.value.trim();
-        if (!q) {
-          alert("검색어를 입력해주세요.");
-          return;
-        }
         resultsBox.innerHTML = `<div class="p-10 text-center text-emerald-600 font-bold animate-pulse">도서 정보를 검색 중입니다... 🔍</div>`;
 
         try {
-          const res = await (global.API ? global.API.request("searchAladin", { query: q }) : { success: false });
+          const res = await (global.API ? global.API.request("searchBooks", { query: q }) : { success: false });
           if (res.success && res.items && res.items.length > 0) {
             resultsBox.innerHTML = res.items.map(item => `
               <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 bg-white border border-gray-100 hover:border-emerald-300 rounded-2xl shadow-sm transition hover:shadow-md">
                 <div class="flex items-center gap-3">
-                  <img src="${item.coverUrl}" class="w-14 h-20 object-cover rounded-xl shadow flex-shrink-0" onerror="this.src='https://via.placeholder.com/80x110'" />
+                  <img src="${item.coverUrl}" class="w-14 h-20 object-cover rounded-xl shadow flex-shrink-0" onerror="this.src='${global.API && global.API.generateDefaultCoverSvg ? global.API.generateDefaultCoverSvg(item.title, item.author) : ''}'" />
                   <div>
                     <h4 class="font-bold text-sm text-gray-900 line-clamp-1">${item.title}</h4>
                     <p class="text-xs text-gray-500 mt-0.5">${item.author} | ${item.publisher}</p>
-                    <span class="inline-block mt-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold">⭐ ${item.aladinRating || '9.5'}</span>
+                    <div class="flex items-center gap-1.5 mt-1">
+                      <span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold">⭐ ${item.rating || '9.5'}</span>
+                      <span class="text-[10px] text-emerald-600 font-bold">${item.source || '도서'}</span>
+                    </div>
                   </div>
                 </div>
                 <button onclick='Modal.selectBook(${JSON.stringify(item).replace(/'/g, "&#39;")}); BuildingModal.close();' class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition shadow whitespace-nowrap self-end sm:self-auto">
@@ -181,7 +180,14 @@
               </div>
             `).join("");
           } else {
-            resultsBox.innerHTML = `<div class="p-10 text-center text-gray-400">검색 결과가 없습니다.</div>`;
+            resultsBox.innerHTML = `
+              <div class="p-10 text-center text-gray-400 space-y-3">
+                <p>검색 결과가 없습니다.</p>
+                <button onclick="BuildingModal.close(); Modal.openBookSearch('feed'); Modal.switchBookTab('manual');" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-xs font-bold shadow">
+                  ✏️ 이 책 직접 입력하여 등록하기
+                </button>
+              </div>
+            `;
           }
         } catch (err) {
           resultsBox.innerHTML = `<div class="p-10 text-center text-rose-500">도서 검색 중 오류가 발생했습니다.</div>`;
@@ -190,6 +196,8 @@
 
       searchBtn.addEventListener("click", doSearch);
       searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+      // 자동 최초 추천 도서 로드
+      doSearch();
     },
 
     renderRelay(container) {

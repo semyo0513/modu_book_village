@@ -301,36 +301,97 @@
     </div>
   </div>
 
-  <!-- 3.2 Aladin Book Search Modal -->
+  <!-- 3.2 Book Search & Manual Input Modal -->
   <div id="modal-book-search" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-    <div class="village-card bg-white w-full max-w-lg p-6 space-y-4 flex flex-col max-h-[85vh]">
-      <div class="flex justify-between items-center">
+    <div class="village-card bg-white w-full max-w-lg p-5 space-y-3.5 flex flex-col max-h-[88vh]">
+      <div class="flex justify-between items-center pb-2 border-b border-gray-100">
         <h3 class="font-black text-base text-gray-900 flex items-center gap-2">
-          <span>📚</span> 알라딘 도서 검색
+          <span>📚</span> 도서 선택 / 등록
         </h3>
-        <button onclick="Modal.closeModal('modal-book-search')" class="text-gray-400 hover:text-gray-600">✕</button>
+        <button onclick="Modal.closeModal('modal-book-search')" class="text-gray-400 hover:text-gray-600 text-base font-bold">✕</button>
+      </div>
+
+      <!-- Tab Switcher: [🔍 도서 검색] vs [✏️ 직접 입력하기] -->
+      <div class="flex bg-gray-100/80 p-1 rounded-xl">
+        <button id="book-tab-btn-search" onclick="Modal.switchBookTab('search')" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white shadow-sm text-emerald-700 transition flex items-center justify-center gap-1.5">
+          <span>🔍</span> 도서 검색
+        </button>
+        <button id="book-tab-btn-manual" onclick="Modal.switchBookTab('manual')" class="flex-1 py-1.5 text-xs font-bold rounded-lg text-gray-500 hover:text-gray-800 transition flex items-center justify-center gap-1.5">
+          <span>✏️</span> 직접 입력하기
+        </button>
       </div>
 
       <input type="hidden" id="search-target-type" value="feed" />
 
-      <div class="flex gap-2">
-        <input 
-          type="text" 
-          id="book-search-input" 
-          class="flex-1 px-3.5 py-2.5 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" 
-          placeholder="책 제목이나 저자 이름을 입력하세요..." 
-          onkeydown="if(event.key==='Enter') Modal.handleBookSearch()"
-        />
-        <button onclick="Modal.handleBookSearch()" class="px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold village-btn">
-          검색
-        </button>
+      <!-- Tab 1: Book Search (Google Books & Curated Presets) -->
+      <div id="book-tab-search" class="space-y-3 flex-1 flex flex-col overflow-hidden">
+        <div class="flex gap-2">
+          <input 
+            type="text" 
+            id="book-search-input" 
+            class="flex-1 px-3.5 py-2.5 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" 
+            placeholder="책 제목이나 저자 이름을 입력하세요... (예: 어린 왕자, 아몬드)" 
+            onkeydown="if(event.key==='Enter') Modal.handleBookSearch()"
+          />
+          <button onclick="Modal.handleBookSearch()" class="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold village-btn flex-shrink-0">
+            검색
+          </button>
+        </div>
+
+        <!-- Search Results List -->
+        <div id="book-search-results" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[250px]">
+          <div class="p-8 text-center text-gray-400 text-xs">
+            검색어를 입력하고 검색 버튼을 누르거나, 상단 <button onclick="Modal.switchBookTab('manual')" class="text-emerald-600 font-bold underline">직접 입력하기</button>로 바로 등록할 수 있습니다.
+          </div>
+        </div>
       </div>
 
-      <!-- Search Results List -->
-      <div id="book-search-results" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[250px]">
-        <div class="p-8 text-center text-gray-400 text-xs">
-          검색어를 입력하고 검색 버튼을 눌러주세요.
+      <!-- Tab 2: Manual Book Entry -->
+      <div id="book-tab-manual" class="space-y-3 hidden flex-1 overflow-y-auto pr-1">
+        <div class="p-2.5 bg-emerald-50/70 border border-emerald-100 rounded-xl text-[11px] text-emerald-800 flex items-center gap-2">
+          <span>💡</span> 검색되지 않는 책, 학급문고, 만화책도 제목을 입력하여 즉시 기록할 수 있습니다.
         </div>
+
+        <div class="space-y-2.5">
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">책 제목 <span class="text-rose-500">*</span></label>
+            <input type="text" id="manual-book-title" placeholder="도서 제목을 입력하세요 (예: 나의 라임오렌지나무)" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" oninput="Modal.updateManualCoverPreview()" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">지은이 (저자)</label>
+              <input type="text" id="manual-book-author" placeholder="저자 이름 (선택)" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" oninput="Modal.updateManualCoverPreview()" />
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-700 mb-1">출판사</label>
+              <input type="text" id="manual-book-publisher" placeholder="출판사 (선택)" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-400 outline-none" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">감성 테마 표지 색상</label>
+            <div class="grid grid-cols-6 gap-2 mb-2" id="manual-theme-picker">
+              <button type="button" onclick="Modal.selectManualTheme('emerald')" class="h-7 rounded-lg border-2 border-emerald-500 bg-emerald-700 shadow-sm transition" title="초록 숲"></button>
+              <button type="button" onclick="Modal.selectManualTheme('navy')" class="h-7 rounded-lg border-2 border-transparent bg-indigo-950 shadow-sm transition" title="별빛 밤"></button>
+              <button type="button" onclick="Modal.selectManualTheme('pink')" class="h-7 rounded-lg border-2 border-transparent bg-pink-700 shadow-sm transition" title="벚꽃 분홍"></button>
+              <button type="button" onclick="Modal.selectManualTheme('sunset')" class="h-7 rounded-lg border-2 border-transparent bg-amber-800 shadow-sm transition" title="따뜻한 노을"></button>
+              <button type="button" onclick="Modal.selectManualTheme('purple')" class="h-7 rounded-lg border-2 border-transparent bg-purple-800 shadow-sm transition" title="마법 보라"></button>
+              <button type="button" onclick="Modal.selectManualTheme('yellow')" class="h-7 rounded-lg border-2 border-transparent bg-amber-600 shadow-sm transition" title="해바라기"></button>
+            </div>
+            <div class="flex items-center gap-3 p-2.5 bg-gray-50 rounded-xl border border-gray-100">
+              <img id="manual-cover-preview" src="" class="w-12 h-16 rounded shadow object-cover flex-shrink-0" />
+              <div class="flex-1 text-[11px] text-gray-500">
+                <span>입력한 제목으로 표지가 자동 생성됩니다.</span>
+                <input type="text" id="manual-book-cover-url" placeholder="또는 표지 이미지 웹주소(URL) 직접 입력..." class="w-full mt-1 px-2 py-1 text-[11px] border rounded-lg bg-white outline-none focus:border-emerald-400" oninput="Modal.updateManualCoverPreview()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="Modal.submitManualBook()" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold village-btn shadow mt-1">
+          ✍️ 이 책으로 독서 기록 작성하기
+        </button>
       </div>
     </div>
   </div>
