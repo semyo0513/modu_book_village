@@ -4,7 +4,12 @@
  */
 
 (function(global) {
+  const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbyKt7RD6O0nDDnx8Wu-bxuVvWts_6hmZQ9SqC0WAqNQDKNVnktoFv_6t-Dosib2hpaFTQ/exec";
+
   const CONFIG = {
+    // 단일 Google Apps Script 웹앱 배포 URL (알라딘 검색 + 구글 시트 공용 DB + 교사 일괄 관리)
+    GAS_API_URL: (typeof localStorage !== "undefined" && localStorage.getItem("BOOK_VILLAGE_GAS_URL")) || DEFAULT_GAS_URL,
+
     // Firebase 웹 설정 (modu-book-village)
     FIREBASE: {
       apiKey: (typeof localStorage !== "undefined" && localStorage.getItem("FIREBASE_API_KEY")) || "AIzaSyBjAM4dw2O4fgooftg1fAB9F5zpe_PRJeU",
@@ -18,22 +23,23 @@
     // 의사 이메일 도메인
     AUTH_DOMAIN: "village.local",
 
-    // 단일 Google Apps Script 웹앱 배포 URL (알라딘 검색 + 교사 일괄 계정 관리 통합)
-    GAS_API_URL: (typeof localStorage !== "undefined" && localStorage.getItem("BOOK_VILLAGE_GAS_URL")) || "",
-
-    // Mock(오프라인 체험) 모드 자동 감지
+    // Mock(오프라인 체험) 모드 자동 감지: GAS URL이나 Firebase가 있으면 실제 온라인 모드로 작동
     IS_MOCK_MODE: function() {
-      return !this.FIREBASE.apiKey || this.FIREBASE.apiKey.includes("MOCK");
+      // GAS_API_URL이 설정되어 있으면 실서버 모드로 동작
+      if (this.GAS_API_URL && this.GAS_API_URL.trim() !== "") {
+        return false;
+      }
+      return (!this.FIREBASE.apiKey || this.FIREBASE.apiKey.includes("MOCK"));
     },
 
     APP_NAME: "책마을 : 우리 반 독서 빌리지",
-    VERSION: "2.5.0 (3D 동화 빌리지)",
+    VERSION: "2.5.1 (공용 데이터베이스 실시간 연동)",
 
     // 감정 태그 목록
     EMOTION_TAGS: ["🌟 깊은감동", "💡 깨달음", "😂 유쾌함", "😢 뭉클함", "🔥 열정/용기", "🤔 깊은생각", "🌿 마음의휴식"],
 
-    // 기본 학급 정보
-    DEFAULT_CLASS_ID: "2026-3-1"
+    // 기본 학급 정보 (학급 전체 공통 공유용)
+    DEFAULT_CLASS_ID: "1반"
   };
 
   CONFIG.GAS_ALADIN_URL = CONFIG.GAS_API_URL;

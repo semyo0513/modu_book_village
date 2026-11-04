@@ -1,8 +1,8 @@
 /**
- * 책마을 API 클라이언트 (GAS 통신 및 Mock Fallback 지원)
+ * 책마을 API 클라이언트 (Google Apps Script 공용 DB 실시간 연동 및 Fallback 지원)
  */
 
-// 초기 Mock 데이터 (GAS 연동 전 테스트 및 체험용)
+// 초기 Mock 데이터 (오프라인 및 첫 안내용)
 const MOCK_INITIAL_DATA = {
   users: [
     { userId: "teacher", name: "담임선생님", classId: "1반", number: 0, role: "teacher", treeLevel: 3, totalLeaves: 12, totalFruits: 2, badges: ["마을촌장", "독서길잡이"] },
@@ -70,46 +70,6 @@ const MOCK_INITIAL_DATA = {
       category: "국내도서 > 어린이 > 동화",
       aladinRating: 9.8,
       description: "양계장을 탈출해 꿈을 찾아 떠난 잎싹의 감동적인 모험."
-    },
-    "9788983711892": {
-      isbn: "9788983711892",
-      title: "시간을 파는 상점",
-      author: "김선영 (지은이)",
-      publisher: "자음과모음",
-      coverUrl: "https://image.aladin.co.kr/product/1628/77/cover500/8957076369_1.jpg",
-      category: "국내도서 > 청소년 > 청소년 문학",
-      aladinRating: 9.5,
-      description: "인터넷 카페에 시간을 파는 상점을 연 온조의 마법 같은 성장기."
-    },
-    "9788936433604": {
-      isbn: "9788936433604",
-      title: "몽실 언니",
-      author: "권정생 (지은이)",
-      publisher: "창비",
-      coverUrl: "https://image.aladin.co.kr/product/46/61/cover500/8936433601_1.jpg",
-      category: "국내도서 > 어린이 > 동화",
-      aladinRating: 9.7,
-      description: "모진 세월 속에서도 동생을 품에 안고 당당히 살아낸 몽실이의 이야기."
-    },
-    "9788998499259": {
-      isbn: "9788998499259",
-      title: "수상한 아파트",
-      author: "박현숙 (지은이)",
-      publisher: "북멘토",
-      coverUrl: "https://image.aladin.co.kr/product/1917/38/cover500/8998499256_1.jpg",
-      category: "국내도서 > 어린이 > 동화",
-      aladinRating: 9.4,
-      description: "여진이가 수상한 이웃들이 사는 503호 아파트에서 겪는 흥미진진한 추리 이야기."
-    },
-    "9788949162096": {
-      isbn: "9788949162096",
-      title: "푸른 사자 와니니",
-      author: "이현 (지은이)",
-      publisher: "창비",
-      coverUrl: "https://image.aladin.co.kr/product/6045/4/cover500/8936442805_1.jpg",
-      category: "국내도서 > 어린이 > 동화",
-      aladinRating: 9.8,
-      description: "아프리카 초원을 누비는 어린 암사자 와니니의 눈부신 성장 모험."
     }
   },
   records: [
@@ -184,60 +144,19 @@ const MOCK_INITIAL_DATA = {
       createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
     }
   ],
-  comments: [
-    {
-      commentId: "cmt_001",
-      recordId: "rec_002",
-      userId: "s01",
-      userName: "김하늘",
-      content: "꿈을 파는 백화점이라니 너무 신기해요! 하늘을 날아다니는 꿈을 사고 싶어요.",
-      roleType: "student",
-      createdAt: new Date(Date.now() - 3600000 * 10).toISOString()
-    },
-    {
-      commentId: "cmt_002",
-      recordId: "rec_002",
-      userId: "teacher",
-      userName: "담임선생님",
-      content: "책 표지가 혹시 파란 밤하늘 느낌인가요? 기대됩니다!",
-      roleType: "teacher",
-      createdAt: new Date(Date.now() - 3600000 * 6).toISOString()
-    },
-    {
-      commentId: "cmt_003",
-      recordId: "rec_003",
-      userId: "s02",
-      userName: "이바다",
-      content: "어린 왕자님, 여우와 헤어질 때 어떤 기분이었나요?",
-      roleType: "journalist",
-      createdAt: new Date(Date.now() - 3600000 * 4).toISOString()
-    },
-    {
-      commentId: "cmt_004",
-      recordId: "rec_003",
-      userId: "s03",
-      userName: "박우주(어린 왕자)",
-      content: "슬펐지만 밀밭을 볼 때마다 여우의 노란 털빛과 우리가 나눈 소중한 시간이 떠올라 마음이 따뜻해졌답니다.",
-      roleType: "persona",
-      parentCommentId: "cmt_003",
-      createdAt: new Date(Date.now() - 3600000 * 3).toISOString()
-    }
-  ],
-  reactions: [
-    { recordId: "rec_001", userId: "s02", type: "like" },
-    { recordId: "rec_001", userId: "s03", type: "wish" }
-  ],
+  comments: [],
+  reactions: [],
   classTree: {
     classId: "1반",
     className: "햇살 1반",
-    totalLeaves: 33,
-    totalFruits: 6,
-    treeStage: 3,
+    totalLeaves: 10,
+    totalFruits: 2,
+    treeStage: 2,
     lastWateredAt: new Date().toISOString()
   }
 };
 
-// 로컬 스토리지 초기화 (Mock용)
+// 로컬 스토리지 캐시 관리
 function getMockStorage() {
   const dataStr = localStorage.getItem("BOOK_VILLAGE_MOCK_STORAGE");
   if (!dataStr) {
@@ -254,7 +173,9 @@ function getMockStorage() {
 }
 
 function saveMockStorage(data) {
-  localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(data));
+  try {
+    localStorage.setItem("BOOK_VILLAGE_MOCK_STORAGE", JSON.stringify(data));
+  } catch(e) {}
 }
 
 // ==========================================
@@ -357,10 +278,11 @@ const API = {
       console.warn("Google Books 검색 건너뜀 (대안 탐색):", err.message);
     }
 
-    // 2. GAS 백엔드 프록시 (네이버/카카오 연동된 경우)
-    if (CONFIG.GAS_API_URL) {
+    // 2. GAS 백엔드 프록시 (네이버/카카오/알라딘 연동)
+    const gasUrl = (window.CONFIG && window.CONFIG.GAS_API_URL) || "";
+    if (gasUrl) {
       try {
-        const res = await fetch(CONFIG.GAS_API_URL, {
+        const res = await fetch(gasUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "searchBooks", payload: { query: q } })
@@ -374,7 +296,7 @@ const API = {
       }
     }
 
-    // 3. 권장도서 목록 중 제목/저자 매칭
+    // 3. 권장도서 목록 매칭
     const presets = this.getPresetBooks();
     const matched = presets.filter(b => 
       b.title.toLowerCase().includes(q.toLowerCase()) || 
@@ -395,28 +317,91 @@ const API = {
     };
   },
 
-  // 공통 POST 요청
+  // 공통 POST 요청 (구글 시트 클라우드 공용 DB 실시간 연동)
   async request(action, payload = {}) {
-    // 도서 검색 요청(searchAladin / searchBooks)은 전역 다중 엔진으로 일원화
+    // 도서 검색 요청은 전역 다중 엔진으로 일원화
     if (action === "searchAladin" || action === "searchBooks") {
       return this.searchBooks(payload.query);
     }
 
-    const token = Auth.getToken();
+    const token = (typeof Auth !== "undefined" && Auth.getToken) ? Auth.getToken() : null;
     const currentUser = (typeof Auth !== "undefined" && Auth.getCurrentUser) ? Auth.getCurrentUser() : null;
 
-    // 1. Firebase Cloud Firestore 실시간 연동 (활성화된 경우 우선 처리)
+    // payload에 현재 사용자 정보 보강
+    if (currentUser) {
+      payload.userId = payload.userId || currentUser.userId;
+      payload.userName = payload.userName || currentUser.name;
+      payload.classId = payload.classId || currentUser.classId || "1반";
+    }
+
+    const gasUrl = (window.CONFIG && window.CONFIG.GAS_API_URL) || "";
+
+    // 1. Google Apps Script 공용 데이터베이스 우선 호출 (모든 기기/사용자 공유)
+    if (gasUrl && gasUrl.trim() !== "") {
+      try {
+        const response = await fetch(gasUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, token, payload })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.success) {
+            console.log(`🌐 [공용 DB (GAS)] ${action} 성공 응답 수신:`, data);
+
+            // 로컬 스토리지에도 동기화 캐시 보존
+            if (action === "createRecord") {
+              this.handleMockRequest("createRecord", payload, token);
+            } else if (action === "getRecords" && Array.isArray(data.records)) {
+              // 도서 표지 보정
+              data.records.forEach(r => {
+                if (r.book && !r.book.coverUrl && this.generateDefaultCoverSvg) {
+                  r.book.coverUrl = this.generateDefaultCoverSvg(r.book.title, r.book.author);
+                }
+              });
+              const db = getMockStorage();
+              // 서버 레코드가 있으면 로컬 캐시 갱신
+              if (data.records.length > 0) {
+                db.records = data.records;
+                saveMockStorage(db);
+              }
+            } else if (action === "getVillageStatus" && data.classTree) {
+              const db = getMockStorage();
+              db.classTree = data.classTree;
+              saveMockStorage(db);
+            }
+
+            // Firebase Firestore가 활성화되어 있으면 백그라운드 병렬 동기화
+            if (typeof window !== "undefined" && window.FirebaseRepo) {
+              try {
+                if (action === "createRecord") {
+                  window.FirebaseRepo.createRecord(payload, currentUser).catch(() => {});
+                } else if (action === "addComment") {
+                  window.FirebaseRepo.addComment({ ...payload, user: currentUser }).catch(() => {});
+                }
+              } catch(e) {}
+            }
+
+            return data;
+          }
+        }
+      } catch (gasErr) {
+        console.warn(`[공용 DB (GAS)] ${action} 요청 실패, 보조 저장소 확인:`, gasErr.message);
+      }
+    }
+
+    // 2. Firebase Cloud Firestore 실시간 연동 (보조 클라우드 저장소)
     if (typeof window !== "undefined" && window.FirebaseRepo) {
       try {
         if (action === "createRecord") {
           const fbRes = await window.FirebaseRepo.createRecord(payload, currentUser);
           if (fbRes && fbRes.success) {
-            // 로컬 스토리지에도 동기화하여 실시간 UI 반영
             this.handleMockRequest("createRecord", payload, token);
             return {
               success: true,
               recordId: fbRes.recordId,
-              message: "파이어베이스에 독서 기록이 성공적으로 등록되었습니다!"
+              message: "클라우드에 독서 기록이 성공적으로 등록되었습니다!"
             };
           }
         } else if (action === "getRecords") {
@@ -428,16 +413,13 @@ const API = {
           const fbRes = await window.FirebaseRepo.addComment({ ...payload, user: currentUser });
           if (fbRes && fbRes.success) {
             this.handleMockRequest("addComment", payload, token);
-            return { success: true, commentId: fbRes.commentId, message: "댓글이 파이어베이스에 등록되었습니다!" };
+            return { success: true, commentId: fbRes.commentId, message: "댓글이 클라우드에 등록되었습니다!" };
           }
         } else if (action === "getComments") {
           const comments = await window.FirebaseRepo.getComments(payload.recordId);
           if (comments && comments.length > 0) {
             return { success: true, comments };
           }
-        } else if (action === "toggleReaction") {
-          await window.FirebaseRepo.toggleReaction({ ...payload, user: currentUser });
-          return this.handleMockRequest(action, payload, token);
         } else if (action === "getVillageStatus") {
           const status = await window.FirebaseRepo.getVillageStatus(payload.classId);
           if (status && status.success && (status.classTree.totalLeaves > 0 || status.recentNews.length > 0)) {
@@ -450,108 +432,30 @@ const API = {
           }
         }
       } catch (fbErr) {
-        console.warn(`[Firebase] ${action} 처리 중 오류, 로컬 저장소로 안전 전환:`, fbErr.message);
+        console.warn(`[Firebase] ${action} 처리 오류:`, fbErr.message);
       }
     }
 
-    // 2. Mock 모드일 때
-    if (CONFIG.IS_MOCK_MODE()) {
-      return this.handleMockRequest(action, payload, token);
-    }
-
-    // 3. 실제 GAS 백엔드 요청
-    if (!CONFIG.GAS_API_URL) {
-      // GAS URL 미설정 시 로컬 Mock 핸들러로 폴백 처리
-      return this.handleMockRequest(action, payload, token);
-    }
-
-    try {
-      const response = await fetch(CONFIG.GAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action, token, payload })
-      });
-      const data = await response.json();
-      
-      // 만약 GAS 서버에서 미지원 action 오류가 반환되거나 인증 실패 시, 로컬 저장소로 안전 전환!
-      if (!data.success && data.message && (
-        data.message.includes("지원되지 않는") || 
-        data.message.includes("알 수 없는") ||
-        data.message.includes("action입니다")
-      )) {
-        console.warn(`GAS에서 [${action}] 미지원 응답 수신, 로컬 저장소로 안전하게 전환하여 저장합니다.`);
-        return this.handleMockRequest(action, payload, token);
-      }
-      return data;
-    } catch (err) {
-      console.warn("API 요청 실패, 로컬 저장소로 안전 전환:", err.message);
-      return this.handleMockRequest(action, payload, token);
-    }
+    // 3. 로컬 Mock 핸들러 (오프라인 최종 폴백)
+    console.log(`💾 [로컬 캐시] ${action} 오프라인 폴백 처리`);
+    return this.handleMockRequest(action, payload, token);
   },
 
-  // Mock 요청 핸들러 (로컬 시뮬레이션)
+  // Mock 요청 핸들러 (로컬 시뮬레이션 및 오프라인 캐시)
   async handleMockRequest(action, payload, token) {
-    // 0.2초 딜레이 (자연스러운 UX)
-    await new Promise(r => setTimeout(r, 150));
+    await new Promise(r => setTimeout(r, 80));
     const db = getMockStorage();
-    const currentUser = Auth.getCurrentUser();
+    const currentUser = (typeof Auth !== "undefined" && Auth.getCurrentUser) ? Auth.getCurrentUser() : null;
 
     switch (action) {
       case "login": {
         const { userId, password } = payload;
-
-        // 1. 실제 Firebase Auth 로그인 시도
-        const fbConfig = (window.CONFIG && window.CONFIG.FIREBASE) || {};
-        const apiKey = fbConfig.apiKey;
-        if (apiKey && !apiKey.includes("MOCK")) {
-          const authDomain = fbConfig.authDomain || "modu-book-village.firebaseapp.com";
-          const email = userId.includes("@") ? userId : `${userId}@${authDomain}`;
-          const checkPws = [password];
-          if (password === "1234") checkPws.push("123456");
-          if (password === "admin1234") checkPws.push("admin1234");
-
-          for (const tryPw of checkPws) {
-            try {
-              const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, password: tryPw, returnSecureToken: true })
-              });
-              const data = await res.json();
-              if (res.ok) {
-                const matchedUser = db.users.find(u => u.userId === userId) || {
-                  userId: userId,
-                  name: data.displayName || (userId === "teacher" ? "선생님" : `${userId} 학생`),
-                  classId: "1반",
-                  role: userId === "teacher" ? "teacher" : "student",
-                  treeLevel: 1,
-                  totalLeaves: 0,
-                  totalFruits: 0,
-                  badges: ["책마을입주민"]
-                };
-                return { success: true, user: matchedUser, token: data.idToken };
-              }
-            } catch (err) {}
-          }
-        }
-
-        // 2. 로컬 계정 폴백
         const user = db.users.find(u => u.userId === userId);
         if (user && (password === "1234" || password === "123456" || password === "admin1234" || user.userId === userId || user.initialPassword === password)) {
           const mockToken = "mock_token_" + userId + "_" + Date.now();
           return { success: true, user: user, token: mockToken };
         }
-        return { success: false, message: "아이디나 비밀번호(기본: 1234 또는 123456 / 관리자: admin1234)를 확인하세요." };
-      }
-
-      case "searchAladin": {
-        const query = (payload.query || "").toLowerCase();
-        const results = Object.values(db.books).filter(b => 
-          b.title.toLowerCase().includes(query) || 
-          b.author.toLowerCase().includes(query) ||
-          b.category.toLowerCase().includes(query)
-        );
-        return { success: true, items: results, totalResults: results.length };
+        return { success: false, message: "아이디나 비밀번호(기본: 1234 / 관리자: admin1234)를 확인하세요." };
       }
 
       case "getBookDetail": {
@@ -563,21 +467,21 @@ const API = {
       case "getVillageStatus": {
         const recent = [...db.records].reverse().slice(0, 5).map(r => ({
           ...r,
-          book: db.books[r.isbn] || { title: "책 정보" }
+          book: db.books[r.isbn] || r.book || { title: "책 정보" }
         }));
-        return { success: true, classTree: db.classTree, recentNews: recent };
+        return { success: true, classTree: db.classTree || { classId: "1반", totalLeaves: 10, totalFruits: 2, treeStage: 2 }, recentNews: recent };
       }
 
       case "getRecords": {
         const { type, classId, userId } = payload;
         let list = [...db.records].reverse();
         if (type) list = list.filter(r => r.type === type);
-        if (classId) list = list.filter(r => r.classId === classId);
+        if (classId && classId !== "전체") list = list.filter(r => !r.classId || r.classId === classId);
         if (userId) list = list.filter(r => r.userId === userId);
 
         const formatted = list.map(r => {
           const isRevealed = r.type !== "blind" || (r.blindInfo && r.blindInfo.revealed);
-          const book = db.books[r.isbn] || { title: "도서 정보 없음", coverUrl: "" };
+          const book = db.books[r.isbn] || r.book || { title: "도서 정보 없음", coverUrl: "" };
           return {
             ...r,
             isbn: isRevealed ? r.isbn : "HIDDEN",
@@ -589,7 +493,7 @@ const API = {
 
       case "createRecord": {
         const user = currentUser || { userId: "s01", name: "우리 반 독서가", classId: "1반", role: "student" };
-        const newId = "rec_" + Date.now().toString(36);
+        const newId = "rec_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 6);
         const record = {
           recordId: newId,
           userId: user.userId,
@@ -597,13 +501,14 @@ const API = {
           classId: user.classId || "1반",
           isbn: payload.isbn,
           type: payload.type || "feed",
-          title: payload.title || "",
+          title: payload.title || (payload.bookObj ? payload.bookObj.title : "도서"),
           content: payload.content,
           question: payload.question || "",
           quote: payload.quote || "",
           characterName: payload.characterName || "",
           rating: Number(payload.rating) || 5,
           emotionTag: payload.emotionTag || "🌟 깊은감동",
+          book: payload.bookObj || db.books[payload.isbn] || { title: payload.title || "도서" },
           createdAt: new Date().toISOString()
         };
 
@@ -614,6 +519,7 @@ const API = {
         db.records.push(record);
 
         if (payload.type === "relay" && payload.relayFromRecordId) {
+          db.connections = db.connections || [];
           db.connections.push({
             connectionId: "conn_" + Date.now().toString(36),
             fromRecordId: payload.relayFromRecordId,
@@ -625,8 +531,7 @@ const API = {
           });
         }
 
-        // 도서 캐시가 없으면 임의 추가
-        if (!db.books[payload.isbn] && payload.bookObj) {
+        if (payload.isbn && payload.bookObj) {
           db.books[payload.isbn] = payload.bookObj;
         }
 
@@ -643,7 +548,9 @@ const API = {
           u.totalLeaves = (u.totalLeaves || 0) + 1;
           u.treeLevel = Math.floor(u.totalLeaves / 3) + 1;
           if (u.totalLeaves % 5 === 0) u.totalFruits = (u.totalFruits || 0) + 1;
-          Auth.setCurrentUser(u);
+          if (typeof Auth !== "undefined" && Auth.setCurrentUser) {
+            Auth.setCurrentUser(u);
+          }
         }
 
         saveMockStorage(db);
@@ -651,12 +558,13 @@ const API = {
       }
 
       case "getComments": {
-        const comments = db.comments.filter(c => c.recordId === payload.recordId);
+        const comments = (db.comments || []).filter(c => c.recordId === payload.recordId);
         return { success: true, comments: comments };
       }
 
       case "addComment": {
         if (!currentUser) return { success: false, message: "로그인이 필요합니다." };
+        db.comments = db.comments || [];
         const newCmt = {
           commentId: "cmt_" + Date.now().toString(36),
           recordId: payload.recordId,
@@ -673,7 +581,7 @@ const API = {
         let justRevealed = false;
         const targetRec = db.records.find(r => r.recordId === payload.recordId);
         if (targetRec && targetRec.type === "blind" && targetRec.blindInfo) {
-          targetRec.blindInfo.currentCount += 1;
+          targetRec.blindInfo.currentCount = (targetRec.blindInfo.currentCount || 0) + 1;
           if (!targetRec.blindInfo.revealed && targetRec.blindInfo.currentCount >= targetRec.blindInfo.threshold) {
             targetRec.blindInfo.revealed = true;
             justRevealed = true;
@@ -686,6 +594,7 @@ const API = {
 
       case "toggleReaction": {
         if (!currentUser) return { success: false, message: "로그인이 필요합니다." };
+        db.reactions = db.reactions || [];
         const idx = db.reactions.findIndex(rx => rx.recordId === payload.recordId && rx.userId === currentUser.userId && rx.type === payload.type);
         let active = false;
         if (idx >= 0) {
@@ -702,16 +611,26 @@ const API = {
       case "getRelayGraph": {
         const relayRecords = db.records.filter(r => r.type === "relay").map(r => ({
           ...r,
-          book: db.books[r.isbn] || { title: "도서 정보 없음", coverUrl: "" }
+          id: r.recordId,
+          title: r.title,
+          author: (r.book && r.book.author) || r.userName,
+          coverUrl: (r.book && r.book.coverUrl) || "",
+          userName: r.userName
         }));
-        return { success: true, nodes: relayRecords, links: db.connections };
+        const links = (db.connections || []).map(c => ({
+          ...c,
+          source: c.fromRecordId,
+          target: c.toRecordId,
+          keyword: c.reasonKeyword || "꼬리잇기"
+        }));
+        return { success: true, nodes: relayRecords, links: links };
       }
 
       case "getMyRoom": {
-        if (!currentUser) return { success: false, message: "로그인이 필요합니다." };
-        const myRecords = db.records.filter(r => r.userId === currentUser.userId).map(r => ({
+        const targetUid = payload.userId || (currentUser && currentUser.userId) || "s01";
+        const myRecords = db.records.filter(r => r.userId === targetUid).map(r => ({
           ...r,
-          book: db.books[r.isbn] || { title: "도서 정보 없음", coverUrl: "" }
+          book: db.books[r.isbn] || r.book || { title: "도서 정보 없음", coverUrl: "" }
         }));
         const genreStats = {};
         myRecords.forEach(r => {
@@ -720,44 +639,22 @@ const API = {
             genreStats[cat] = (genreStats[cat] || 0) + 1;
           }
         });
-        const wishCount = db.reactions.filter(rx => rx.userId === currentUser.userId && rx.type === "wish").length;
-        return { success: true, user: currentUser, records: myRecords, genreStats: genreStats, wishCount: wishCount };
+        const wishCount = (db.reactions || []).filter(rx => rx.userId === targetUid && rx.type === "wish").length;
+        const u = db.users.find(x => x.userId === targetUid) || currentUser || { userId: targetUid, name: "학생" };
+        return { success: true, user: u, records: myRecords, genreStats: genreStats, wishCount: wishCount };
       }
 
       case "batchRegisterStudents": {
-        if (!currentUser || currentUser.role !== "teacher") return { success: false, message: "교사 권한이 필요합니다." };
-
-        const rows = (payload.students || []).map((st, i) => {
-          const num = Number(st.number) || (i + 1);
-          return {
-            number: num,
-            name: st.name,
-            nickname: st.name,
-            classId: payload.classId || "1반",
-            computedLoginId: st.userId || ("s" + (num < 10 ? "0" + num : num)),
-            initialPassword: st.password || "123456"
-          };
-        });
-
-        // 실제 Firebase 또는 AdminApi 연동이 가능하면 일괄 생성 실행
-        if (typeof window !== "undefined" && window.AdminApi && window.AdminApi.bulkCreate) {
-          const bulkRes = await window.AdminApi.bulkCreate(rows);
-          return {
-            success: true,
-            addedCount: bulkRes.successCount,
-            message: `${bulkRes.successCount}명의 학생 계정이 파이어베이스에 성공적으로 생성 및 등록되었습니다!`
-          };
-        }
-
         let count = 0;
-        rows.forEach(r => {
-          const uid = r.computedLoginId;
+        (payload.students || []).forEach(st => {
+          const num = Number(st.number) || 0;
+          const uid = st.userId || ("s" + (num < 10 ? "0" + num : num));
           if (!db.users.find(u => u.userId === uid)) {
             db.users.push({
               userId: uid,
-              name: r.name,
-              classId: r.classId,
-              number: r.number,
+              name: st.name,
+              classId: payload.classId || "1반",
+              number: num,
               role: "student",
               treeLevel: 1,
               totalLeaves: 0,
@@ -769,22 +666,6 @@ const API = {
         });
         saveMockStorage(db);
         return { success: true, addedCount: count, message: `${count}명의 학생이 등록되었습니다.` };
-      }
-
-      case "getClassStatistics": {
-        const students = db.users.filter(u => u.role === "student" && u.classId === (payload.classId || "1반"));
-        students.sort((a, b) => b.totalLeaves - a.totalLeaves);
-        return { success: true, classId: payload.classId || "1반", totalStudents: students.length, ranking: students };
-      }
-
-      case "deleteContent": {
-        if (payload.contentType === "record") {
-          db.records = db.records.filter(r => r.recordId !== payload.id);
-        } else if (payload.contentType === "comment") {
-          db.comments = db.comments.filter(c => c.commentId !== payload.id);
-        }
-        saveMockStorage(db);
-        return { success: true, message: "항목이 삭제되었습니다." };
       }
 
       default:

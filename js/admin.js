@@ -795,7 +795,7 @@ const Admin = {
     const modal = document.getElementById("modal-system-settings");
     if (modal) {
       const inputGas = document.getElementById("setting-gas-url");
-      if (inputGas) inputGas.value = localStorage.getItem("BOOK_VILLAGE_GAS_URL") || "";
+      if (inputGas) inputGas.value = localStorage.getItem("BOOK_VILLAGE_GAS_URL") || (window.CONFIG && window.CONFIG.GAS_API_URL) || "";
       modal.classList.remove("hidden");
       modal.classList.add("flex");
     }

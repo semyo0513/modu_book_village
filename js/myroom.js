@@ -37,7 +37,8 @@ const MyRoom = {
     const container = document.getElementById("myroom-container");
     if (container) container.innerHTML = `<div class="p-8 text-center text-gray-500">내 서재를 정리하는 중... 📚</div>`;
 
-    const res = await API.request("getMyRoom");
+    const currentUser = Auth.getCurrentUser();
+    const res = await API.request("getMyRoom", { userId: currentUser ? currentUser.userId : "s01" });
     if (res.success) {
       this.renderMyRoom(res);
     }

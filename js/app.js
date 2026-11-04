@@ -17,6 +17,17 @@ const App = {
     if (hash && ["village", "feed", "relay", "blind", "interview", "myroom", "admin"].includes(hash)) {
       this.switchTab(hash);
     }
+
+    // 다른 학생들의 새 글/활동 실시간 자동 동기화 (45초 주기)
+    setInterval(() => {
+      if (document.visibilityState === "visible") {
+        if (this.currentTab === "feed" && typeof Feed !== "undefined" && Feed.loadRecords) {
+          Feed.loadRecords();
+        } else if (this.currentTab === "village" && typeof Village !== "undefined" && Village.refreshVillageStatus) {
+          Village.refreshVillageStatus();
+        }
+      }
+    }, 45000);
   },
 
   switchTab(tabName) {
